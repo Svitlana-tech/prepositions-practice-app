@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "TestMode" AS ENUM ('SELF_CHECK', 'TEACHER_REVIEW');
+
+-- AlterTable
+ALTER TABLE "Test" ADD COLUMN     "mode" "TestMode" NOT NULL DEFAULT 'TEACHER_REVIEW';

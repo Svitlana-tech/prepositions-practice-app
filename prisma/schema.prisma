@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum TaskType {
+  SENTENCE_MCQ
+  TEXT_MCQ
+  CLOZE_WORD_BANK
+  PARAGRAPH_MATCH
+  FILL_IN_SENTENCE
+  FILL_IN_TEXT
+}
+
+/// SELF_CHECK: the student sees their score and corrections immediately, nothing is
+/// reviewed by the teacher in detail. TEACHER_REVIEW: the student just gets a
+/// confirmation; the teacher sees the full per-question breakdown.
+enum TestMode {
+  SELF_CHECK
+  TEACHER_REVIEW
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  /// A topic belongs to exactly one question type: "Conditionals" under
+  /// "missing word" is a separate topic from "Conditionals" under "gap fill".
+  taskType  TaskType @default(SENTENCE_MCQ)
+  /// The student-facing group this topic lives under (Vocabulary/Grammar/Exam
+  /// tasks/etc). Null = not placed anywhere yet, invisible in the sectioned
+  /// student nav until a teacher assigns it.
+  sectionId String?
+  section   Section? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  tasks     Task[]
+  attempts  Attempt[]
+
+  @@unique([taskType, name])
+}
+
+/// A student-facing top-level grouping (e.g. "Vocabulary", "Grammar", "Exam
+/// tasks") that topics and vocab banks are placed into, so the student picks a
+/// section before picking a question type/topic instead of seeing everything
+/// at once. Teacher-managed: created, renamed, reordered and hidden freely.
+model Section {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  /// Display order, ascending. Ties broken by createdAt.
+  order       Int         @default(0)
+  /// false = kept around for organizing but not shown to students yet.
+  isPublished Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  categories  Category[]
+  vocabBanks  VocabBank[]
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  type         TaskType
+  title        String
+  instructions String?
+  points       Int
+  isPublished  Boolean   @default(true)
+  /// false = written directly inside a test and not meant to be reused elsewhere:
+  /// hidden from the teacher's task bank, topic counts and random practice pools,
+  /// but still gradeable/fetchable by id so the test it belongs to keeps working.
+  inBank       Boolean   @default(true)
+  payload      Json
+  /// Short, per-task explanation shown inline. Ignored (in favor of
+  /// explanationEntry's text) whenever explanationEntryId is set.
+  explanation  String?
+  /// Links to a reusable rule in the explanation bank — when set, the student side
+  /// shows a "Read full explanation" link/expand (instead of `explanation` inline)
+  /// that opens explanationEntry.text. For rules that recur across many tasks and
+  /// don't fit under a single question (e.g. "apply for" vs "apply to", or
+  /// "agree with/on/to") — write the rule once, link every matching task to it.
+  /// Only the preposition cards deck currently renders this distinction; other
+  /// question types just fall back to showing `explanation` as plain text.
+  explanationEntryId String?
+  explanationEntry   ExplanationEntry? @relation(fields: [explanationEntryId], references: [id], onDelete: SetNull)
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  attempts     Attempt[]
+}
+
+/// A reusable long-form rule explanation (e.g. "apply for" vs "apply to"), written
+/// once and linked from every Task that needs it via Task.explanationEntryId — so
+/// fixing the wording later updates every task at once instead of hunting down copies.
+model ExplanationEntry {
+  id        String   @id @default(cuid())
+  /// Short, teacher-facing name shown in the picker — not seen by students.
+  label     String   @unique
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks     Task[]
+}
+
+/// A fixed, ordered set of questions a teacher assembles once and shares by
+/// link, so every student who opens it gets the exact same test.
+model Test {
+  id        String    @id @default(cuid())
+  title     String
+  /// Ordered array of Task ids — the fixed question set, in the order shown.
+  taskIds   Json
+  /// Chosen by the teacher when the test is created; decides what a student sees
+  /// on the result screen and where the detailed answers end up.
+  mode      TestMode  @default(TEACHER_REVIEW)
+  createdAt DateTime  @default(now())
+  attempts  Attempt[]
+}
+
+/// A named pool of vocabulary words — e.g. one level, or one specific student.
+/// Future vocabulary modes (flashcards, written/oral checks, the lexical battle
+/// game) each pick a whole bank to draw their session from.
+model VocabBank {
+  id        String      @id @default(cuid())
+  name      String
+  sectionId String?
+  section   Section?    @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  createdAt DateTime    @default(now())
+  words     VocabWord[]
+}
+
+model VocabWord {
+  id        String    @id @default(cuid())
+  bankId    String
+  bank      VocabBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  /// What's shown to the student — the Ukrainian word or phrase.
+  ukrainian String
+  /// 1–2 accepted English answers, matched exactly (case-insensitive).
+  answers   Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([bankId])
+}
+
+model Attempt {
+  id          String    @id @default(cuid())
+  studentName String
+  taskId      String?
+  task        Task?     @relation(fields: [taskId], references: [id])
+  taskIds     Json?
+  /// Which question type the session covered; set even when categoryId is null
+  /// ("all topics mixed" within one type). Null for test attempts, which can
+  /// mix question types.
+  taskType    TaskType?
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  testId      String?
+  test        Test?     @relation(fields: [testId], references: [id], onDelete: SetNull)
+  score       Int
+  maxScore    Int
+  answers     Json
+  createdAt   DateTime  @default(now())
+
+  @@index([studentName])
+  @@index([taskId])
+  @@index([testId])
+}

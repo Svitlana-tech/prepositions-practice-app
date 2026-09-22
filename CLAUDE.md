@@ -1,0 +1,2 @@
+@AGENTS.md
+@LETTER_TO_SELF.md
