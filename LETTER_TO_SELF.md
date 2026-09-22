@@ -163,11 +163,10 @@ https://english-practice-app-taupe.vercel.app
   (`c4c7b57`, "Start prepositions-only app from a copy of the application
   codebase"). Это чистая история с одного коммита, не форк истории
   `application/`.
-- **GitHub-репозиторий** — Светлана создаёт вручную на github.com (пусто, без
-  README/gitignore/license, чтобы не спорить с уже закоммиченными файлами),
-  затем даёт ссылку, чтобы подключить remote и запушить. Если в момент чтения
-  этого письма `git remote -v` в этой папке уже что-то показывает — значит,
-  это уже сделано, не создавай второй репозиторий.
+- **GitHub-репозиторий — создан и подключён 2026-09-22:**
+  https://github.com/Svitlana-tech/prepositions-practice-app (приватный, ветка
+  `main`, remote `origin`). Код уже запушен. Не создавай новый репозиторий —
+  этот уже есть, просто продолжай коммитить и пушить в него как обычно.
 - Деплой (Vercel) — отдельный проект, не тот же, что у `application/`. Ещё не
   сделано, нужен свой `DATABASE_URL` в Vercel env vars.
 
