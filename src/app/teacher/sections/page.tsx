@@ -10,7 +10,7 @@ type Section = {
   name: string;
   order: number;
   isPublished: boolean;
-  _count: { categories: number; vocabBanks: number };
+  _count: { categories: number };
 };
 
 export default function SectionsPage() {
@@ -129,8 +129,8 @@ export default function SectionsPage() {
       <h1 className="mb-2 text-2xl font-semibold text-gray-900">Sections</h1>
       <p className="mb-6 text-sm text-gray-500">
         Sections are the first thing a student picks — e.g. Vocabulary, Grammar, Exam tasks. Assign
-        each topic (on the Topics page) and vocab bank to a section so it shows up here for
-        students. A section with nothing in it yet still shows as a button — students just see
+        each topic (on the Topics page) to a section so it shows up here for students. A section
+        with nothing in it yet still shows as a button — students just see
         &quot;nothing here yet&quot; until you add something.
       </p>
 
@@ -140,7 +140,7 @@ export default function SectionsPage() {
         <div className="flex flex-col gap-3">
           {sections.map((s, index) => {
             const isRenaming = renamingId === s.id;
-            const isEmpty = s._count.categories === 0 && s._count.vocabBanks === 0;
+            const isEmpty = s._count.categories === 0;
             return (
               <Card key={s.id} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -190,9 +190,7 @@ export default function SectionsPage() {
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {s._count.categories} topic(s) · {s._count.vocabBanks} vocab bank(s)
-                      </div>
+                      <div className="text-sm text-gray-500">{s._count.categories} topic(s)</div>
                     </div>
                   )}
                 </div>
@@ -221,7 +219,7 @@ export default function SectionsPage() {
                           setDeleteError(null);
                           setConfirmingId(s.id);
                         }}
-                        title={isEmpty ? undefined : "Its topics/banks will just become unsectioned"}
+                        title={isEmpty ? undefined : "Its topics will just become unsectioned"}
                       >
                         Delete
                       </Button>

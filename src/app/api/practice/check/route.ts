@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { gradeAttempt } from "@/lib/grading";
-import type {
-  ClozeWordBankPayload,
-  FillInBlankPayload,
-  SentenceMcqPayload,
-  TaskType,
-  TextMcqPayload,
-} from "@/lib/taskSchemas";
+import type { FillInBlankPayload, TaskType } from "@/lib/taskSchemas";
 
 /**
  * What to reveal to the student after checking one question — never the whole
@@ -15,20 +9,6 @@ import type {
  */
 function revealFor(type: TaskType, payload: unknown): unknown {
   switch (type) {
-    case "SENTENCE_MCQ":
-      return { correctIndex: (payload as SentenceMcqPayload).correctIndex };
-    case "TEXT_MCQ":
-      return {
-        correctIndexes: Object.fromEntries(
-          (payload as TextMcqPayload).gaps.map((g) => [g.id, g.correctIndex])
-        ),
-      };
-    case "CLOZE_WORD_BANK":
-      return {
-        correctAnswers: Object.fromEntries(
-          (payload as ClozeWordBankPayload).gaps.map((g) => [g.id, g.correctAnswer])
-        ),
-      };
     case "FILL_IN_SENTENCE":
     case "FILL_IN_TEXT":
       return {
@@ -36,8 +16,6 @@ function revealFor(type: TaskType, payload: unknown): unknown {
           (payload as FillInBlankPayload).gaps.map((g) => [g.id, g.correctAnswer])
         ),
       };
-    default:
-      return {};
   }
 }
 

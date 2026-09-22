@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 export async function GET() {
   const sections = await prisma.section.findMany({
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    include: { _count: { select: { categories: true, vocabBanks: true } } },
+    include: { _count: { select: { categories: true } } },
   });
   return NextResponse.json({ sections });
 }

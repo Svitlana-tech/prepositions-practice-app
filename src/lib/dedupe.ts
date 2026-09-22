@@ -19,12 +19,6 @@ function taskContentText(type: TaskType, payload: unknown): string {
   const p = payload as Record<string, unknown> | null;
   if (!p) return "";
   switch (type) {
-    case "SENTENCE_MCQ":
-      return typeof p.sentence === "string" ? p.sentence : "";
-    case "PARAGRAPH_MATCH":
-      return typeof p.textWithGaps === "string" ? p.textWithGaps : "";
-    case "TEXT_MCQ":
-    case "CLOZE_WORD_BANK":
     case "FILL_IN_SENTENCE":
     case "FILL_IN_TEXT":
       return typeof p.text === "string" ? p.text : "";
@@ -54,21 +48,4 @@ export async function checkTaskDuplicate(
     (task) => normalizeForDedupe(taskContentText(task.type, task.payload)) === normalized
   );
   return isDuplicate ? "This task already exists in this topic" : null;
-}
-
-/** Duplicate check is scoped to a single vocab bank and never compares across banks. */
-export async function checkVocabWordDuplicate(
-  bankId: string,
-  ukrainian: string,
-  excludeWordId?: string
-): Promise<string | null> {
-  const normalized = normalizeForDedupe(ukrainian);
-  if (!normalized) return null;
-
-  const existing = await prisma.vocabWord.findMany({
-    where: { bankId, ...(excludeWordId ? { id: { not: excludeWordId } } : {}) },
-    select: { ukrainian: true },
-  });
-  const isDuplicate = existing.some((word) => normalizeForDedupe(word.ukrainian) === normalized);
-  return isDuplicate ? "This word already exists in this bank" : null;
 }

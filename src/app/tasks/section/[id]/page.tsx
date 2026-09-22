@@ -24,7 +24,6 @@ export default function SectionPage() {
   const [studentName, setStudentName] = useState<string | null>(null);
   const [sectionName, setSectionName] = useState<string | null>(null);
   const [types, setTypes] = useState<TypeSummary[]>([]);
-  const [vocabCount, setVocabCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,14 +41,13 @@ export default function SectionPage() {
         const sections: SectionSummary[] = sectionsData.sections ?? [];
         setSectionName(sections.find((s) => s.id === params.id)?.name ?? null);
         setTypes(categoriesData.types ?? []);
-        setVocabCount(categoriesData.vocabModule?.totalCount ?? null);
       })
       .finally(() => setLoading(false));
   }, [router, params.id]);
 
   if (!studentName) return null;
 
-  const isEmpty = !loading && types.length === 0 && vocabCount === null;
+  const isEmpty = !loading && types.length === 0;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 md:max-w-3xl lg:max-w-4xl">
@@ -60,18 +58,6 @@ export default function SectionPage() {
 
       {loading && <p className="text-gray-500">Loading...</p>}
       {isEmpty && <p className="text-gray-500">Nothing here yet — check back later.</p>}
-
-      {vocabCount !== null && (
-        <div className="mb-8 flex flex-col gap-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Vocabulary</div>
-          <Link href="/tasks/vocabulary">
-            <Card className="transition-shadow hover:shadow-md">
-              <div className="text-lg font-medium text-gray-900">📚 Word practice</div>
-              <div className="text-sm text-gray-500">Flashcards and more</div>
-            </Card>
-          </Link>
-        </div>
-      )}
 
       {types.map((t) => (
         <div key={t.type} className="mb-8 flex flex-col gap-3">

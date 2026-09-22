@@ -9,20 +9,8 @@ datasource db {
 }
 
 enum TaskType {
-  SENTENCE_MCQ
-  TEXT_MCQ
-  CLOZE_WORD_BANK
-  PARAGRAPH_MATCH
   FILL_IN_SENTENCE
   FILL_IN_TEXT
-}
-
-/// SELF_CHECK: the student sees their score and corrections immediately, nothing is
-/// reviewed by the teacher in detail. TEACHER_REVIEW: the student just gets a
-/// confirmation; the teacher sees the full per-question breakdown.
-enum TestMode {
-  SELF_CHECK
-  TEACHER_REVIEW
 }
 
 model Category {
@@ -30,7 +18,7 @@ model Category {
   name      String
   /// A topic belongs to exactly one question type: "Conditionals" under
   /// "missing word" is a separate topic from "Conditionals" under "gap fill".
-  taskType  TaskType @default(SENTENCE_MCQ)
+  taskType  TaskType @default(FILL_IN_SENTENCE)
   /// The student-facing group this topic lives under (Vocabulary/Grammar/Exam
   /// tasks/etc). Null = not placed anywhere yet, invisible in the sectioned
   /// student nav until a teacher assigns it.
@@ -56,7 +44,6 @@ model Section {
   isPublished Boolean     @default(true)
   createdAt   DateTime    @default(now())
   categories  Category[]
-  vocabBanks  VocabBank[]
 }
 
 model Task {
@@ -103,46 +90,6 @@ model ExplanationEntry {
   tasks     Task[]
 }
 
-/// A fixed, ordered set of questions a teacher assembles once and shares by
-/// link, so every student who opens it gets the exact same test.
-model Test {
-  id        String    @id @default(cuid())
-  title     String
-  /// Ordered array of Task ids — the fixed question set, in the order shown.
-  taskIds   Json
-  /// Chosen by the teacher when the test is created; decides what a student sees
-  /// on the result screen and where the detailed answers end up.
-  mode      TestMode  @default(TEACHER_REVIEW)
-  createdAt DateTime  @default(now())
-  attempts  Attempt[]
-}
-
-/// A named pool of vocabulary words — e.g. one level, or one specific student.
-/// Future vocabulary modes (flashcards, written/oral checks, the lexical battle
-/// game) each pick a whole bank to draw their session from.
-model VocabBank {
-  id        String      @id @default(cuid())
-  name      String
-  sectionId String?
-  section   Section?    @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-  createdAt DateTime    @default(now())
-  words     VocabWord[]
-}
-
-model VocabWord {
-  id        String    @id @default(cuid())
-  bankId    String
-  bank      VocabBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
-  /// What's shown to the student — the Ukrainian word or phrase.
-  ukrainian String
-  /// 1–2 accepted English answers, matched exactly (case-insensitive).
-  answers   Json
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@index([bankId])
-}
-
 model Attempt {
   id          String    @id @default(cuid())
   studentName String
@@ -155,8 +102,6 @@ model Attempt {
   taskType    TaskType?
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  testId      String?
-  test        Test?     @relation(fields: [testId], references: [id], onDelete: SetNull)
   score       Int
   maxScore    Int
   answers     Json
@@ -164,5 +109,4 @@ model Attempt {
 
   @@index([studentName])
   @@index([taskId])
-  @@index([testId])
 }

@@ -31,14 +31,8 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
             <Link href="/teacher/sections" className="text-gray-900 hover:text-blue-600">
               Sections
             </Link>
-            <Link href="/teacher/vocabulary" className="text-gray-900 hover:text-blue-600">
-              Vocabulary
-            </Link>
             <Link href="/teacher/explanations" className="text-gray-900 hover:text-blue-600">
               Rule bank
-            </Link>
-            <Link href="/teacher/tests" className="text-gray-900 hover:text-blue-600">
-              Tests
             </Link>
           </div>
           <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-red-600">

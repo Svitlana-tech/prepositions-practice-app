@@ -79,22 +79,6 @@ function checkQuoteBalance(warnings: string[], label: string, text: string) {
   }
 }
 
-function checkOptionDuplicates(warnings: string[], label: string, options: string[]) {
-  const seen = new Map<string, number>();
-  options.forEach((opt, idx) => {
-    const key = opt.trim().toLowerCase();
-    if (!key) return;
-    const firstIdx = seen.get(key);
-    if (firstIdx !== undefined) {
-      warnings.push(
-        `${label}: option ${firstIdx + 1} and option ${idx + 1} are the same text ("${opt.trim()}").`
-      );
-    } else {
-      seen.set(key, idx);
-    }
-  });
-}
-
 /** Flags a word right before/after the gap that would duplicate the start/end of the correct answer once substituted in. */
 function checkGapBoundary(warnings: string[], label: string, before: string, after: string, answer: string) {
   if (!answer.trim()) return;
@@ -114,7 +98,6 @@ function checkGapBoundary(warnings: string[], label: string, before: string, aft
   }
 }
 
-type McqGap = { id: string; options: string[]; correctIndex: number };
 type FillGap = { id: string; correctAnswer: string };
 
 export function lintTaskContent(type: TaskType, payload: unknown, title: string): string[] {
@@ -124,66 +107,6 @@ export function lintTaskContent(type: TaskType, payload: unknown, title: string)
   checkQuoteBalance(warnings, "Title", title);
 
   switch (type) {
-    case "SENTENCE_MCQ": {
-      const sentence = String(p.sentence ?? "");
-      const options = (p.options as string[] | undefined) ?? [];
-      const correctIndex = p.correctIndex as number;
-      checkQuoteBalance(warnings, "Sentence", sentence);
-      checkOptionDuplicates(warnings, "Options", options);
-      const gapIdx = sentence.indexOf("___");
-      if (gapIdx >= 0 && options[correctIndex] != null) {
-        checkGapBoundary(
-          warnings,
-          "Sentence",
-          sentence.slice(0, gapIdx),
-          sentence.slice(gapIdx + 3),
-          options[correctIndex]
-        );
-      }
-      break;
-    }
-    case "TEXT_MCQ": {
-      const text = String(p.text ?? "");
-      checkQuoteBalance(warnings, "Text", text);
-      const gaps = (p.gaps as McqGap[] | undefined) ?? [];
-      for (const gap of gaps) {
-        checkOptionDuplicates(warnings, `Gap {${gap.id}} options`, gap.options);
-        const marker = `{${gap.id}}`;
-        const markerIdx = text.indexOf(marker);
-        const answer = gap.options[gap.correctIndex];
-        if (markerIdx >= 0 && answer != null) {
-          checkGapBoundary(
-            warnings,
-            `Gap {${gap.id}}`,
-            text.slice(0, markerIdx),
-            text.slice(markerIdx + marker.length),
-            answer
-          );
-        }
-      }
-      break;
-    }
-    case "CLOZE_WORD_BANK": {
-      const text = String(p.text ?? "");
-      checkQuoteBalance(warnings, "Text", text);
-      const gaps = (p.gaps as FillGap[] | undefined) ?? [];
-      const wordBank = (p.wordBank as string[] | undefined) ?? [];
-      checkOptionDuplicates(warnings, "Word bank", wordBank);
-      for (const gap of gaps) {
-        const marker = `{${gap.id}}`;
-        const markerIdx = text.indexOf(marker);
-        if (markerIdx >= 0) {
-          checkGapBoundary(
-            warnings,
-            `Gap {${gap.id}}`,
-            text.slice(0, markerIdx),
-            text.slice(markerIdx + marker.length),
-            gap.correctAnswer
-          );
-        }
-      }
-      break;
-    }
     case "FILL_IN_SENTENCE":
     case "FILL_IN_TEXT": {
       const text = String(p.text ?? "");
@@ -204,8 +127,6 @@ export function lintTaskContent(type: TaskType, payload: unknown, title: string)
       }
       break;
     }
-    case "PARAGRAPH_MATCH":
-      break;
   }
 
   return warnings;

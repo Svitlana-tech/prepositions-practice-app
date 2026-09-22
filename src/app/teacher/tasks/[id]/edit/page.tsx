@@ -2,19 +2,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { SentenceMcqForm } from "@/components/teacher/SentenceMcqForm";
-import { ClozeWordBankForm } from "@/components/teacher/ClozeWordBankForm";
-import { TextMcqForm } from "@/components/teacher/TextMcqForm";
 import { FillInBlankForm } from "@/components/teacher/FillInBlankForm";
-import { payloadToEditable } from "@/lib/clozeEditing";
-import { payloadToEditableTextMcq } from "@/lib/textMcqEditing";
 import { payloadToEditableFillIn } from "@/lib/fillInEditing";
-import type {
-  ClozeWordBankPayload,
-  FillInBlankPayload,
-  SentenceMcqPayload,
-  TextMcqPayload,
-} from "@/lib/taskSchemas";
+import type { FillInBlankPayload } from "@/lib/taskSchemas";
 
 type Task = {
   id: string;
@@ -50,47 +40,6 @@ export default function EditTaskPage() {
     <div>
       <h1 className="mb-6 text-2xl font-semibold text-gray-900">Edit Task</h1>
       <Suspense>
-        {task.type === "SENTENCE_MCQ" && (
-          <SentenceMcqForm
-            initial={{
-              taskId: task.id,
-              title: task.title,
-              instructions: task.instructions ?? "",
-              sentence: (task.payload as SentenceMcqPayload).sentence,
-              options: (task.payload as SentenceMcqPayload).options,
-              correctIndex: (task.payload as SentenceMcqPayload).correctIndex,
-              isPublished: task.isPublished,
-              categoryId: task.categoryId,
-              explanation: task.explanation ?? "",
-            }}
-          />
-        )}
-        {task.type === "CLOZE_WORD_BANK" && (
-          <ClozeWordBankForm
-            initial={{
-              taskId: task.id,
-              title: task.title,
-              instructions: task.instructions ?? "",
-              cloze: payloadToEditable(task.payload as ClozeWordBankPayload),
-              isPublished: task.isPublished,
-              categoryId: task.categoryId,
-              explanation: task.explanation ?? "",
-            }}
-          />
-        )}
-        {task.type === "TEXT_MCQ" && (
-          <TextMcqForm
-            initial={{
-              taskId: task.id,
-              title: task.title,
-              instructions: task.instructions ?? "",
-              textMcq: payloadToEditableTextMcq(task.payload as TextMcqPayload),
-              isPublished: task.isPublished,
-              categoryId: task.categoryId,
-              explanation: task.explanation ?? "",
-            }}
-          />
-        )}
         {(task.type === "FILL_IN_SENTENCE" || task.type === "FILL_IN_TEXT") && (
           <FillInBlankForm
             taskType={task.type}
@@ -106,13 +55,9 @@ export default function EditTaskPage() {
             }}
           />
         )}
-        {task.type !== "SENTENCE_MCQ" &&
-          task.type !== "CLOZE_WORD_BANK" &&
-          task.type !== "TEXT_MCQ" &&
-          task.type !== "FILL_IN_SENTENCE" &&
-          task.type !== "FILL_IN_TEXT" && (
-            <p className="text-gray-500">Editing this task type isn&apos;t supported yet.</p>
-          )}
+        {task.type !== "FILL_IN_SENTENCE" && task.type !== "FILL_IN_TEXT" && (
+          <p className="text-gray-500">Editing this task type isn&apos;t supported yet.</p>
+        )}
       </Suspense>
     </div>
   );

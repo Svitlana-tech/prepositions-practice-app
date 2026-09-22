@@ -6,12 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { TaskType } from "@/lib/taskSchemas";
 import {
-  SentenceQuestion,
-  ClozeQuestion,
-  TextMcqQuestion,
   FillInBlankQuestion,
-  isClozePayload,
-  isFillInBlankPayload,
   type QuestionPayload as Payload,
   type CheckResult,
   type CurrentAnswers,
@@ -73,9 +68,7 @@ export function PracticeSession({
 
   const allGapsFilled =
     payload !== null &&
-    ("sentence" in payload
-      ? currentAnswers["1"] !== undefined
-      : payload.gaps.every((g) => currentAnswers[g.id] !== undefined && currentAnswers[g.id] !== ""));
+    payload.gaps.every((g) => currentAnswers[g.id] !== undefined && currentAnswers[g.id] !== "");
 
   async function handleCheck() {
     if (!taskIds || !allGapsFilled) return;
@@ -135,36 +128,13 @@ export function PracticeSession({
         Question {index + 1} of {taskIds.length} · correct: {correctCount}
       </div>
 
-      {"sentence" in payload ? (
-        <SentenceQuestion
-          payload={payload}
-          selected={typeof currentAnswers["1"] === "number" ? (currentAnswers["1"] as number) : null}
-          onSelect={(idx) => setCurrentAnswers({ "1": idx })}
-          checkResult={checkResult}
-        />
-      ) : isClozePayload(payload) ? (
-        <ClozeQuestion
-          payload={payload}
-          answers={currentAnswers}
-          onChange={(gapId, value) => setCurrentAnswers((prev) => ({ ...prev, [gapId]: value }))}
-          checkResult={checkResult}
-        />
-      ) : isFillInBlankPayload(payload) ? (
-        <FillInBlankQuestion
-          payload={payload}
-          answers={currentAnswers}
-          onChange={(gapId, value) => setCurrentAnswers((prev) => ({ ...prev, [gapId]: value }))}
-          checkResult={checkResult}
-          instructions={instructions}
-        />
-      ) : (
-        <TextMcqQuestion
-          payload={payload}
-          answers={currentAnswers}
-          onChange={(gapId, value) => setCurrentAnswers((prev) => ({ ...prev, [gapId]: value }))}
-          checkResult={checkResult}
-        />
-      )}
+      <FillInBlankQuestion
+        payload={payload}
+        answers={currentAnswers}
+        onChange={(gapId, value) => setCurrentAnswers((prev) => ({ ...prev, [gapId]: value }))}
+        checkResult={checkResult}
+        instructions={instructions}
+      />
 
       {!checkResult && (
         <Button onClick={handleCheck} disabled={!allGapsFilled}>

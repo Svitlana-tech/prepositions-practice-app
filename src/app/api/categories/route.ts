@@ -6,14 +6,14 @@ import { AVAILABLE_TASK_TYPES } from "@/lib/taskTypes";
  * Public: the student menu, question type first. Each playable type reports how
  * many published questions it has and which of its topics currently have any.
  * A type with questions but no topics is normal — students just practice the
- * whole type. `?sectionId=` scopes everything (topics and the vocab tile) to
- * one section, for the per-section browse page.
+ * whole type. `?sectionId=` scopes everything to one section, for the
+ * per-section browse page.
  */
 export async function GET(request: NextRequest) {
   const sectionId = request.nextUrl.searchParams.get("sectionId") || undefined;
   const playableTypes = AVAILABLE_TASK_TYPES.map((t) => t.type);
 
-  const [categories, countsByType, vocabWordCount, cardsCountsByCategory] = await Promise.all([
+  const [categories, countsByType, cardsCountsByCategory] = await Promise.all([
     prisma.category.findMany({
       where: {
         taskType: { in: playableTypes },
@@ -37,9 +37,6 @@ export async function GET(request: NextRequest) {
         ...(sectionId ? { category: { sectionId } } : {}),
       },
       _count: { _all: true },
-    }),
-    prisma.vocabWord.count({
-      where: { bank: sectionId ? { sectionId } : {} },
     }),
     // How many published FILL_IN_SENTENCE tasks per topic are cards-mode — a topic where
     // every task qualifies gets the endless full-screen practice page instead of the
@@ -75,5 +72,5 @@ export async function GET(request: NextRequest) {
       })),
   })).filter((t) => t.totalCount > 0);
 
-  return NextResponse.json({ types, vocabModule: vocabWordCount > 0 ? { totalCount: vocabWordCount } : null });
+  return NextResponse.json({ types });
 }

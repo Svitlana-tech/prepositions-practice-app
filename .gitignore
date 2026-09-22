@@ -45,3 +45,10 @@ next-env.d.ts
 
 # Claude Code session files
 /.claude/
+
+.vercel
+.env*
+
+# working screenshots shared in chat, not app content
+screens.pptx
+~$screens.pptx

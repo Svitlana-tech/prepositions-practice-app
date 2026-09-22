@@ -5,7 +5,7 @@ import type { TaskType } from "@/lib/taskSchemas";
 
 /**
  * Protected (middleware): topics for the teacher's topic manager.
- * `?taskType=SENTENCE_MCQ` narrows the list to the topics of one question type,
+ * `?taskType=FILL_IN_SENTENCE` narrows the list to the topics of one question type,
  * which is what the question forms need.
  */
 export async function GET(request: NextRequest) {
