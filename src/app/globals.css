@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #faf7f2;
   --foreground: #171717;
 }
 
@@ -12,13 +12,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Background is fixed regardless of the device's light/dark setting, so the
+   app looks the same on every phone. */
+html,
 body {
   background: var(--background);
   color: var(--foreground);
