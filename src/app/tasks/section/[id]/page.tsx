@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getStoredStudentName } from "@/lib/studentName";
+import { clearStoredStudentName, getStoredStudentName } from "@/lib/studentName";
 import { getCategoryTheme, MIX_THEME } from "@/lib/categoryTheme";
 
 type TopicSummary = { id: string; name: string; count: number; endless?: boolean };
@@ -23,6 +23,7 @@ export default function SectionPage() {
   const router = useRouter();
   const [studentName, setStudentName] = useState<string | null>(null);
   const [sectionName, setSectionName] = useState<string | null>(null);
+  const [multipleSections, setMultipleSections] = useState(false);
   const [types, setTypes] = useState<TypeSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,10 +41,16 @@ export default function SectionPage() {
       .then(([sectionsData, categoriesData]) => {
         const sections: SectionSummary[] = sectionsData.sections ?? [];
         setSectionName(sections.find((s) => s.id === params.id)?.name ?? null);
+        setMultipleSections(sections.length > 1);
         setTypes(categoriesData.types ?? []);
       })
       .finally(() => setLoading(false));
   }, [router, params.id]);
+
+  function handleNotYou() {
+    clearStoredStudentName();
+    router.replace("/");
+  }
 
   if (!studentName) return null;
 
@@ -51,10 +58,20 @@ export default function SectionPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 md:max-w-3xl lg:max-w-4xl">
-      <Link href="/tasks" className="mb-4 inline-block text-sm text-blue-600 hover:underline">
-        ← Back to sections
-      </Link>
-      <h1 className="mb-6 text-2xl font-semibold text-gray-900">{sectionName ?? "Practice"}</h1>
+      {multipleSections && (
+        <Link href="/tasks" className="mb-4 inline-block text-sm text-blue-600 hover:underline">
+          ← Back to sections
+        </Link>
+      )}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
+          <p className="text-gray-600">{sectionName ?? "What do you want to practice?"}</p>
+        </div>
+        <button onClick={handleNotYou} className="text-sm text-blue-600 hover:underline">
+          Not me
+        </button>
+      </div>
 
       {loading && <p className="text-gray-500">Loading...</p>}
       {isEmpty && <p className="text-gray-500">Nothing here yet — check back later.</p>}

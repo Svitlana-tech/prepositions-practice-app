@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isTaskType } from "@/lib/taskTypes";
+import { shuffle } from "@/lib/shuffle";
 
 const SESSION_SIZE = 10;
 
@@ -35,8 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "There are no questions here yet" }, { status: 404 });
   }
 
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  const taskIds = shuffled.slice(0, SESSION_SIZE).map((t) => t.id);
+  const taskIds = shuffle(pool).slice(0, SESSION_SIZE).map((t) => t.id);
 
   return NextResponse.json({ taskIds });
 }

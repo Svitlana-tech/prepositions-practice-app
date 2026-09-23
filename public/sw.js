@@ -1,4 +1,4 @@
-const CACHE_NAME = "app-cache-v1";
+const CACHE_NAME = "app-cache-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -23,31 +23,37 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  // Network-first for pages and API calls, so content is always fresh when online.
-  if (request.mode === "navigate" || url.pathname.startsWith("/api/")) {
+  // Cache-first ONLY for Next's own immutable, content-hashed build output
+  // (the filename changes whenever the content does, so this can never go
+  // stale). Everything else — including client-side route/RSC fetches,
+  // which look like plain page URLs and are NOT `navigate` requests — must
+  // stay network-first, or a returning visitor's in-app navigation can
+  // silently serve a stale response from a previous deploy.
+  if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
-      fetch(request).catch(() =>
-        request.mode === "navigate"
-          ? caches.match(OFFLINE_URL)
-          : new Response(JSON.stringify({ error: "offline" }), {
-              status: 503,
-              headers: { "Content-Type": "application/json" },
-            })
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            return response;
+          })
       )
     );
     return;
   }
 
-  // Cache-first for static assets (icons, fonts, JS/CSS chunks).
+  // Network-first for everything else (pages, RSC navigation fetches, API
+  // calls), so content is always fresh when online.
   event.respondWith(
-    caches.match(request).then(
-      (cached) =>
-        cached ||
-        fetch(request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return response;
-        })
+    fetch(request).catch(() =>
+      request.mode === "navigate"
+        ? caches.match(OFFLINE_URL)
+        : new Response(JSON.stringify({ error: "offline" }), {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          })
     )
   );
 });

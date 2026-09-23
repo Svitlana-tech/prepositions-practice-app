@@ -23,8 +23,16 @@ export default function TasksPage() {
     setStudentName(name);
     fetch("/api/sections")
       .then((res) => res.json())
-      .then((data) => setSections(data.sections ?? []))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        const list: SectionSummary[] = data.sections ?? [];
+        // Only one section to choose from — skip the picker and go straight in.
+        if (list.length === 1) {
+          router.replace(`/tasks/section/${list[0].id}`);
+          return;
+        }
+        setSections(list);
+        setLoading(false);
+      });
   }, [router]);
 
   function handleNotYou() {
