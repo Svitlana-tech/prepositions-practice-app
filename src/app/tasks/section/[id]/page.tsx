@@ -93,7 +93,7 @@ export default function SectionPage() {
             >
               <div>
                 <div className="text-lg font-bold" style={{ color: MIX_THEME.text }}>
-                  {t.topics.length > 0 ? "⚡ All topics mixed" : "▶ Start practice"}
+                  {t.topics.length > 0 ? "⚡ All-in-One Mix" : "▶ Start practice"}
                 </div>
                 <div className="text-sm" style={{ color: MIX_THEME.accent }}>
                   {t.totalCount} question(s)
