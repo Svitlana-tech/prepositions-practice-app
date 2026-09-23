@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "English Practice",
-    short_name: "English Practice",
-    description: "English exam practice tasks",
+    name: "Preposition Master",
+    short_name: "Preposition Master",
+    description: "Master English prepositions in 2 minutes a day.",
     start_url: "/",
     display: "standalone",
     background_color: "#faf7f2",

@@ -49,6 +49,8 @@ next-env.d.ts
 .vercel
 .env*
 
-# working screenshots shared in chat, not app content
+# working screenshots/specs shared in chat, not app content
 screens.pptx
 ~$screens.pptx
+texts.docx
+~$texts.docx

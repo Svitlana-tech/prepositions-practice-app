@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "English Practice",
-  description: "English exam practice tasks",
+  title: "Preposition Master",
+  description: "Master English prepositions in 2 minutes a day.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "English Practice",
+    title: "Preposition Master",
   },
 };
 
