@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getStoredStudentName } from "@/lib/studentName";
-import { Card } from "@/components/ui/Card";
+import { getCategoryTheme, MIX_THEME } from "@/lib/categoryTheme";
 
 type TopicSummary = { id: string; name: string; count: number; endless?: boolean };
 
@@ -60,7 +60,7 @@ export default function SectionPage() {
       {isEmpty && <p className="text-gray-500">Nothing here yet — check back later.</p>}
 
       {types.map((t) => (
-        <div key={t.type} className="mb-8 flex flex-col gap-3">
+        <div key={t.type} className="mb-8 flex flex-col gap-5">
           <div>
             <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">
               {t.label}
@@ -70,31 +70,53 @@ export default function SectionPage() {
 
           {/* A type without topics is practiced as a single pool. */}
           <Link href={`/tasks/practice?type=${t.type}&section=${params.id}`}>
-            <Card className="transition-shadow hover:shadow-md">
-              <div className="text-lg font-medium text-gray-900">
-                {t.topics.length > 0 ? "🔀 All topics mixed" : "▶ Start practice"}
+            <div
+              className="flex items-center justify-between rounded-2xl p-5 transition-transform hover:scale-[1.01]"
+              style={{ background: MIX_THEME.bg, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+            >
+              <div>
+                <div className="text-lg font-bold" style={{ color: MIX_THEME.text }}>
+                  {t.topics.length > 0 ? "⚡ All topics mixed" : "▶ Start practice"}
+                </div>
+                <div className="text-sm" style={{ color: MIX_THEME.accent }}>
+                  {t.totalCount} question(s)
+                </div>
               </div>
-              <div className="text-sm text-gray-500">{t.totalCount} question(s)</div>
-            </Card>
+            </div>
           </Link>
 
-          {t.topics.map((topic) => (
-            <Link
-              key={topic.id}
-              href={
-                topic.endless
-                  ? `/tasks/cards/${topic.id}`
-                  : `/tasks/practice?type=${t.type}&topic=${topic.id}&section=${params.id}`
-              }
-            >
-              <Card className="transition-shadow hover:shadow-md">
-                <div className="text-lg font-medium text-gray-900">{topic.name}</div>
-                <div className="text-sm text-gray-500">
-                  {topic.endless ? "Endless practice" : `${topic.count} question(s)`}
-                </div>
-              </Card>
-            </Link>
-          ))}
+          {t.topics.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {t.topics.map((topic) => {
+                const theme = getCategoryTheme(topic.name);
+                return (
+                  <Link
+                    key={topic.id}
+                    href={
+                      topic.endless
+                        ? `/tasks/cards/${topic.id}`
+                        : `/tasks/practice?type=${t.type}&topic=${topic.id}&section=${params.id}`
+                    }
+                  >
+                    <div
+                      className="flex h-full items-start gap-3 rounded-2xl p-4 transition-transform hover:scale-[1.01]"
+                      style={{ background: theme.bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+                    >
+                      <div className="text-2xl leading-none">{theme.icon}</div>
+                      <div>
+                        <div className="font-semibold" style={{ color: theme.accent }}>
+                          {topic.name}
+                        </div>
+                        <div className="text-sm opacity-70" style={{ color: theme.accent }}>
+                          {topic.endless ? "Endless practice" : `${topic.count} question(s)`}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       ))}
     </div>
