@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { TaskType } from "@/lib/taskSchemas";
+import { getMistakeIds, recordFirstTry, removeMistake } from "@/lib/mistakes";
 import {
   FillInBlankQuestion,
   type QuestionPayload as Payload,
@@ -13,16 +14,20 @@ import {
 } from "@/components/student/QuestionRenderers";
 
 export function PracticeSession({
-  taskType,
-  categoryId,
+  taskType = null,
+  categoryId = null,
   sectionId = null,
+  presetTaskIds = null,
 }: {
-  taskType: TaskType;
+  taskType?: TaskType | null;
   /** A single topic of that type, or null for "all topics of this type mixed". */
-  categoryId: string | null;
+  categoryId?: string | null;
   /** The section this session was started from — keeps "mixed" (no categoryId) scoped
    *  to that section's topics instead of every topic of the type app-wide. */
   sectionId?: string | null;
+  /** Play exactly these tasks instead of asking practice/start for a random 10
+   *  (the Fix Mistakes session). */
+  presetTaskIds?: string[] | null;
 }) {
   const [taskIds, setTaskIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,10 +41,20 @@ export function PracticeSession({
   const [finalScore, setFinalScore] = useState<{ score: number; maxScore: number } | null>(null);
 
   useEffect(() => {
+    if (presetTaskIds) {
+      setTaskIds(presetTaskIds);
+      return;
+    }
     fetch("/api/practice/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ taskType, categoryId, sectionId }),
+      // The mix (no topic) mixes in a couple of this student's own mistakes.
+      body: JSON.stringify({
+        taskType,
+        categoryId,
+        sectionId,
+        mistakeTaskIds: categoryId ? [] : getMistakeIds(),
+      }),
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -50,7 +65,7 @@ export function PracticeSession({
       })
       .then((data) => setTaskIds(data.taskIds))
       .catch((e) => setError(e.message));
-  }, [taskType, categoryId, sectionId]);
+  }, [taskType, categoryId, sectionId, presetTaskIds]);
 
   useEffect(() => {
     if (!taskIds || index >= taskIds.length) return;
@@ -58,13 +73,27 @@ export function PracticeSession({
     setInstructions(null);
     setCurrentAnswers({});
     setCheckResult(null);
-    fetch(`/api/tasks/${taskIds[index]}`)
-      .then((res) => res.json())
-      .then((data) => {
+    const taskId = taskIds[index];
+    fetch(`/api/tasks/${taskId}`)
+      .then(async (res) => {
+        if (res.status === 404) {
+          // Deleted/unpublished since it was saved as a mistake — drop it and move on.
+          removeMistake(taskId);
+          setTaskIds((ids) => ids?.filter((id) => id !== taskId) ?? null);
+          return;
+        }
+        const data = await res.json();
         setPayload(data.payload);
         setInstructions(data.instructions ?? null);
       });
   }, [taskIds, index]);
+
+  // Only reachable when dropped tasks (above) shrink the list past the current position.
+  useEffect(() => {
+    if (!taskIds || index < taskIds.length) return;
+    if (taskIds.length === 0) setError("There are no questions here yet.");
+    else setFinalScore(tally);
+  }, [taskIds, index, tally]);
 
   const allGapsFilled =
     payload !== null &&
@@ -80,6 +109,7 @@ export function PracticeSession({
     });
     const result: CheckResult = await res.json();
     setCheckResult(result);
+    recordFirstTry(taskId, result.score === result.maxScore);
     setTally((prev) => ({ score: prev.score + result.score, maxScore: prev.maxScore + result.maxScore }));
     if (result.score === result.maxScore) setCorrectCount((c) => c + 1);
   }

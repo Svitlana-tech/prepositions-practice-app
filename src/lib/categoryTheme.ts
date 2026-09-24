@@ -30,5 +30,8 @@ export function getCategoryTheme(name: string): CategoryTheme {
 }
 
 /** The "practice everything at once" banner — matches the spec's
- * All-in-One Mix styling (dark card, teal accent). */
+ * "Daily Mix" banner (dark card, teal accent). */
 export const MIX_THEME = { bg: "#2B2D42", text: "#FFFFFF", accent: "#2A9D8F" };
+
+/** The "Fix Mistakes" button — the student's own wrong answers, red-tinted. */
+export const FIX_MISTAKES_THEME: CategoryTheme = { bg: "#FFEBEE", accent: "#C62828", icon: "🛠️" };

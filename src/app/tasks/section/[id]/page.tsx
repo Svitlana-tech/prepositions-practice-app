@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { clearStoredStudentName, getStoredStudentName } from "@/lib/studentName";
-import { getCategoryTheme, MIX_THEME } from "@/lib/categoryTheme";
+import { FIX_MISTAKES_THEME, getCategoryTheme, MIX_THEME } from "@/lib/categoryTheme";
+import { getMistakeIds } from "@/lib/mistakes";
 
 type TopicSummary = { id: string; name: string; count: number; endless?: boolean };
 
@@ -26,6 +27,7 @@ export default function SectionPage() {
   const [multipleSections, setMultipleSections] = useState(false);
   const [types, setTypes] = useState<TypeSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mistakeCount, setMistakeCount] = useState(0);
 
   useEffect(() => {
     const name = getStoredStudentName();
@@ -34,6 +36,7 @@ export default function SectionPage() {
       return;
     }
     setStudentName(name);
+    setMistakeCount(getMistakeIds().length);
     Promise.all([
       fetch("/api/sections").then((res) => res.json()),
       fetch(`/api/categories?sectionId=${params.id}`).then((res) => res.json()),
@@ -93,10 +96,29 @@ export default function SectionPage() {
             >
               <div>
                 <div className="text-lg font-bold" style={{ color: MIX_THEME.text }}>
-                  {t.topics.length > 0 ? "⚡ All-in-One Mix" : "▶ Start practice"}
+                  {t.topics.length > 0 ? "⚡ Daily Mix" : "▶ Start practice"}
                 </div>
                 <div className="text-sm" style={{ color: MIX_THEME.accent }}>
-                  {t.totalCount} question(s)
+                  {t.topics.length > 0
+                    ? "10 questions from all topics + 2 of your mistakes"
+                    : `${t.totalCount} question(s)`}
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/tasks/mistakes">
+            <div
+              className="flex items-center gap-3 rounded-2xl p-5 transition-transform hover:scale-[1.01]"
+              style={{ background: FIX_MISTAKES_THEME.bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+            >
+              <div className="text-2xl leading-none">{FIX_MISTAKES_THEME.icon}</div>
+              <div>
+                <div className="text-lg font-bold" style={{ color: FIX_MISTAKES_THEME.accent }}>
+                  Fix Mistakes
+                </div>
+                <div className="text-sm opacity-70" style={{ color: FIX_MISTAKES_THEME.accent }}>
+                  {mistakeCount === 0 ? "No mistakes yet" : `${mistakeCount} sentence(s) to fix`}
                 </div>
               </div>
             </div>

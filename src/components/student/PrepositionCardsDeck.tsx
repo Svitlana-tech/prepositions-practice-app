@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { shuffle } from "@/lib/shuffle";
+import { recordFirstTry } from "@/lib/mistakes";
 import { PrepositionCardsQuestion } from "@/components/student/PrepositionCards";
 import type { FillInBlankPayload } from "@/components/student/QuestionRenderers";
 
@@ -18,6 +19,9 @@ export function PrepositionCardsDeck({ categoryId }: { categoryId: string }) {
   const deckRef = useRef<string[]>([]);
   const posRef = useRef(0);
   const drawCountRef = useRef(0);
+  // The draw whose first Confirm was already recorded for Fix Mistakes — retries after a
+  // wrong guess don't count, only the first try on each card does.
+  const firstTryDrawRef = useRef<number | null>(null);
 
   const [currentId, setCurrentId] = useState<string | null>(null);
   // Bumped on every draw, even when the same task id comes up twice in a row (a small or
@@ -97,6 +101,10 @@ export function PrepositionCardsDeck({ categoryId }: { categoryId: string }) {
     const result = await res.json().catch(() => null);
     const correct =
       result?.perGapResults?.find((r: { gapId: string; correct: boolean }) => r.gapId === gapId)?.correct ?? false;
+    if (result && firstTryDrawRef.current !== drawCountRef.current) {
+      firstTryDrawRef.current = drawCountRef.current;
+      recordFirstTry(taskId, correct);
+    }
     return {
       correct,
       explanation: result?.explanation ?? null,
