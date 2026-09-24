@@ -17,6 +17,8 @@ function PracticeScreen() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [studentName, setStudentName] = useState<string | null>(null);
+  // Bumped by "Repeat Topic" to remount a fresh session.
+  const [round, setRound] = useState(0);
 
   const typeParam = searchParams.get("type");
   const topicParam = searchParams.get("topic");
@@ -40,7 +42,13 @@ function PracticeScreen() {
         ← Back to exercises
       </Link>
       {isTaskType(typeParam) ? (
-        <PracticeSession taskType={typeParam} categoryId={topicParam} sectionId={sectionParam} />
+        <PracticeSession
+          key={round}
+          taskType={typeParam}
+          categoryId={topicParam}
+          sectionId={sectionParam}
+          onRepeat={() => setRound((r) => r + 1)}
+        />
       ) : (
         <p className="text-red-600">Choose an exercise from the list first.</p>
       )}

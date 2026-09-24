@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import type { TaskType } from "@/lib/taskSchemas";
 import { getMistakeIds, recordFirstTry, removeMistake } from "@/lib/mistakes";
+import { forgetSeen, getSeenIds, markSeen } from "@/lib/seenTasks";
+import { SessionResults, type AnswerRecord } from "@/components/student/SessionResults";
 import {
   FillInBlankQuestion,
   type QuestionPayload as Payload,
@@ -18,6 +19,7 @@ export function PracticeSession({
   categoryId = null,
   sectionId = null,
   presetTaskIds = null,
+  onRepeat,
 }: {
   taskType?: TaskType | null;
   /** A single topic of that type, or null for "all topics of this type mixed". */
@@ -28,6 +30,8 @@ export function PracticeSession({
   /** Play exactly these tasks instead of asking practice/start for a random 10
    *  (the Fix Mistakes session). */
   presetTaskIds?: string[] | null;
+  /** "Repeat Topic" on the results screen — the page remounts a fresh session. */
+  onRepeat: () => void;
 }) {
   const [taskIds, setTaskIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +41,10 @@ export function PracticeSession({
   const [currentAnswers, setCurrentAnswers] = useState<CurrentAnswers>({});
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
-  const [tally, setTally] = useState({ score: 0, maxScore: 0 });
-  const [finalScore, setFinalScore] = useState<{ score: number; maxScore: number } | null>(null);
+  const [records, setRecords] = useState<AnswerRecord[]>([]);
+  const [finished, setFinished] = useState(false);
+  // Tasks that close a topic's previous cycle — answered, but not counted as seen in the new one.
+  const lastOfCycleRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (presetTaskIds) {
@@ -54,6 +60,7 @@ export function PracticeSession({
         categoryId,
         sectionId,
         mistakeTaskIds: categoryId ? [] : getMistakeIds(),
+        seenTaskIds: getSeenIds(),
       }),
     })
       .then(async (res) => {
@@ -63,7 +70,11 @@ export function PracticeSession({
         }
         return res.json();
       })
-      .then((data) => setTaskIds(data.taskIds))
+      .then((data) => {
+        forgetSeen(data.forgetSeenIds ?? []);
+        lastOfCycleRef.current = new Set(data.lastOfCycleIds ?? []);
+        setTaskIds(data.taskIds);
+      })
       .catch((e) => setError(e.message));
   }, [taskType, categoryId, sectionId, presetTaskIds]);
 
@@ -92,8 +103,8 @@ export function PracticeSession({
   useEffect(() => {
     if (!taskIds || index < taskIds.length) return;
     if (taskIds.length === 0) setError("There are no questions here yet.");
-    else setFinalScore(tally);
-  }, [taskIds, index, tally]);
+    else setFinished(true);
+  }, [taskIds, index]);
 
   const allGapsFilled =
     payload !== null &&
@@ -108,10 +119,24 @@ export function PracticeSession({
       body: JSON.stringify({ taskId, answers: currentAnswers }),
     });
     const result: CheckResult = await res.json();
+    const correct = result.score === result.maxScore;
     setCheckResult(result);
-    recordFirstTry(taskId, result.score === result.maxScore);
-    setTally((prev) => ({ score: prev.score + result.score, maxScore: prev.maxScore + result.maxScore }));
-    if (result.score === result.maxScore) setCorrectCount((c) => c + 1);
+    recordFirstTry(taskId, correct);
+    if (!lastOfCycleRef.current.has(taskId)) markSeen(taskId);
+    if (correct) setCorrectCount((c) => c + 1);
+    if (payload) {
+      const gapId = payload.gaps[0]?.id ?? "gap1";
+      setRecords((prev) => [
+        ...prev,
+        {
+          taskId,
+          text: payload.text,
+          chosen: String(currentAnswers[gapId] ?? ""),
+          correctAnswer: result.reveal?.correctAnswers?.[gapId] ?? "",
+          correct,
+        },
+      ]);
+    }
   }
 
   function handleNext() {
@@ -120,7 +145,7 @@ export function PracticeSession({
       setIndex(index + 1);
       return;
     }
-    setFinalScore(tally);
+    setFinished(true);
   }
 
   if (error) {
@@ -134,18 +159,8 @@ export function PracticeSession({
     );
   }
 
-  if (finalScore) {
-    return (
-      <Card className="flex flex-col items-center gap-4 py-10 text-center">
-        <div className="text-3xl font-semibold text-gray-900">
-          {finalScore.score} / {finalScore.maxScore}
-        </div>
-        <p className="text-gray-600">Done! Here&apos;s your result.</p>
-        <Link href="/tasks">
-          <Button>Choose another exercise</Button>
-        </Link>
-      </Card>
-    );
+  if (finished) {
+    return <SessionResults records={records} onRepeat={onRepeat} />;
   }
 
   if (!taskIds || !payload) {

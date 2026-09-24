@@ -17,6 +17,13 @@ const MIX_EXCLUDED_TOPIC_NAMES = ["Academic Writing", "Prepositions"];
  * 10 random questions spread evenly over the topics (scoped to `sectionId` when
  * given, minus MIX_EXCLUDED_TOPIC_NAMES), plus up to MIX_MISTAKES ids picked from
  * `mistakeTaskIds` — the student's Fix Mistakes pool, which only lives in their browser.
+ *
+ * No repeats until a topic runs out: `seenTaskIds` (also browser-only) is what this
+ * student has already been shown, and unseen tasks are always drawn first. When a
+ * topic has too few unseen left, the rest is filled from its seen tasks and those ids
+ * come back in `forgetSeenIds` — the client forgets them, starting that topic's next cycle.
+ * The unseen leftovers drawn alongside close the old cycle, so they come back in
+ * `lastOfCycleIds` and the client doesn't count them as seen in the new one.
  */
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -26,6 +33,11 @@ export async function POST(request: NextRequest) {
   const mistakeTaskIds: string[] = Array.isArray(body?.mistakeTaskIds)
     ? body.mistakeTaskIds.filter((id: unknown): id is string => typeof id === "string").slice(0, 500)
     : [];
+  const seen = new Set<string>(
+    Array.isArray(body?.seenTaskIds)
+      ? body.seenTaskIds.filter((id: unknown): id is string => typeof id === "string").slice(0, 20000)
+      : []
+  );
 
   if (!isTaskType(taskType)) {
     return NextResponse.json({ error: "Choose a question type first" }, { status: 400 });
@@ -52,19 +64,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "There are no questions here yet" }, { status: 404 });
   }
 
+  const forgetSeenIds: string[] = [];
+  const lastOfCycleIds: string[] = [];
+  /** One topic's draw order: unseen first; if fewer than `need` are unseen, its seen
+   *  tasks follow and are all forgotten (the topic's cycle restarts). */
+  function unseenFirst(ids: string[], need: number): string[] {
+    const unseen = shuffle(ids.filter((id) => !seen.has(id)));
+    if (unseen.length >= need) return unseen;
+    const seenHere = ids.filter((id) => seen.has(id));
+    forgetSeenIds.push(...seenHere);
+    lastOfCycleIds.push(...unseen);
+    return [...unseen, ...shuffle(seenHere)];
+  }
+
   if (categoryId) {
-    const taskIds = shuffle(pool).slice(0, SESSION_SIZE).map((t) => t.id);
-    return NextResponse.json({ taskIds });
+    const taskIds = unseenFirst(
+      pool.map((t) => t.id),
+      SESSION_SIZE
+    ).slice(0, SESSION_SIZE);
+    return NextResponse.json({ taskIds, forgetSeenIds, lastOfCycleIds });
   }
 
   // Deal one question per topic per round, topics in random order, until 10 are
   // drawn — so four topics give 2–3 each, and a small topic that runs out just
   // leaves its turn to the others.
   const byTopic = new Map<string | null, string[]>();
-  for (const t of shuffle(pool)) {
+  for (const t of pool) {
     byTopic.set(t.categoryId, [...(byTopic.get(t.categoryId) ?? []), t.id]);
   }
-  const queues = shuffle([...byTopic.values()]);
+  const perTopic = Math.ceil(SESSION_SIZE / byTopic.size);
+  const queues = shuffle([...byTopic.values()].map((ids) => unseenFirst(ids, perTopic)));
   const picked: string[] = [];
   while (picked.length < SESSION_SIZE && queues.some((q) => q.length > 0)) {
     for (const q of queues) {
@@ -90,5 +119,5 @@ export async function POST(request: NextRequest) {
     : [];
   const mistakes = shuffle(eligible.map((t) => t.id)).slice(0, MIX_MISTAKES);
 
-  return NextResponse.json({ taskIds: shuffle([...picked, ...mistakes]) });
+  return NextResponse.json({ taskIds: shuffle([...picked, ...mistakes]), forgetSeenIds, lastOfCycleIds });
 }

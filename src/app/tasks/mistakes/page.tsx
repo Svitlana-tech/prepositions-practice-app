@@ -18,6 +18,8 @@ export default function FixMistakesPage() {
   const router = useRouter();
   const [studentName, setStudentName] = useState<string | null>(null);
   const [taskIds, setTaskIds] = useState<string[] | null>(null);
+  // Bumped by "Repeat Topic" to remount a fresh session over the (now smaller) pool.
+  const [round, setRound] = useState(0);
 
   useEffect(() => {
     const name = getStoredStudentName();
@@ -40,7 +42,14 @@ export default function FixMistakesPage() {
       {taskIds.length === 0 ? (
         <p className="text-gray-600">No mistakes to fix — great job! 🎉</p>
       ) : (
-        <PracticeSession presetTaskIds={taskIds} />
+        <PracticeSession
+          key={round}
+          presetTaskIds={taskIds}
+          onRepeat={() => {
+            setTaskIds(shuffle(getMistakeIds()).slice(0, SESSION_SIZE));
+            setRound((r) => r + 1);
+          }}
+        />
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { shuffle } from "@/lib/shuffle";
 import { recordFirstTry } from "@/lib/mistakes";
+import { forgetSeen, getSeenIds, markSeen } from "@/lib/seenTasks";
 import { PrepositionCardsQuestion } from "@/components/student/PrepositionCards";
 import type { FillInBlankPayload } from "@/components/student/QuestionRenderers";
 
@@ -15,6 +16,18 @@ import type { FillInBlankPayload } from "@/components/student/QuestionRenderers"
  * button or a swipe once solved), not automatic — they need a moment to re-read the
  * completed sentence and its explanation first.
  */
+/** Deck order for one pass: cards this student hasn't seen yet first (in random order),
+ *  then the rest. Once every card has been seen, the cycle restarts from scratch. */
+function unseenFirst(ids: string[]): string[] {
+  const seen = new Set(getSeenIds());
+  const unseen = ids.filter((id) => !seen.has(id));
+  if (unseen.length === 0) {
+    forgetSeen(ids);
+    return shuffle(ids);
+  }
+  return [...shuffle(unseen), ...shuffle(ids.filter((id) => seen.has(id)))];
+}
+
 export function PrepositionCardsDeck({ categoryId }: { categoryId: string }) {
   const deckRef = useRef<string[]>([]);
   const posRef = useRef(0);
@@ -62,7 +75,7 @@ export function PrepositionCardsDeck({ categoryId }: { categoryId: string }) {
           setError("There are no questions here yet.");
           return;
         }
-        deckRef.current = shuffle(ids);
+        deckRef.current = unseenFirst(ids);
         posRef.current = 0;
         setCurrentId(deckRef.current[0]);
       })
@@ -71,6 +84,7 @@ export function PrepositionCardsDeck({ categoryId }: { categoryId: string }) {
 
   useEffect(() => {
     if (!currentId) return;
+    markSeen(currentId);
     setPayload(null);
     fetch(`/api/tasks/${currentId}`)
       .then((res) => res.json())
@@ -80,7 +94,7 @@ export function PrepositionCardsDeck({ categoryId }: { categoryId: string }) {
   function drawNext() {
     posRef.current += 1;
     if (posRef.current >= deckRef.current.length) {
-      deckRef.current = shuffle(deckRef.current);
+      deckRef.current = unseenFirst(deckRef.current);
       posRef.current = 0;
     }
     drawCountRef.current += 1;
