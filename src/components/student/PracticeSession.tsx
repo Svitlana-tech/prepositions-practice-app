@@ -43,6 +43,7 @@ export function PracticeSession({
   const [correctCount, setCorrectCount] = useState(0);
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [finished, setFinished] = useState(false);
+  const nextRef = useRef<HTMLDivElement>(null);
   // The session's changes to the "seen" list, held back until the set is finished: a
   // session abandoned halfway (window closed, Back pressed) leaves the list untouched, so
   // its sentences go back into the pool. `lastOfCycle` tasks close a topic's previous
@@ -123,6 +124,19 @@ export function PracticeSession({
       if (!pending.lastOfCycle.has(r.taskId)) markSeen(r.taskId);
     }
   }, [finished, records]);
+
+  // After Check, scroll the Next button into view with room to spare below it (its
+  // scroll-mb) — at the very bottom it can end up under a phone browser's floating
+  // toolbar (e.g. Telegram's in-app browser). The explanation stays above it.
+  useEffect(() => {
+    if (!checkResult) return;
+    // Next frame: the layout is still settling (Check button swapped for the feedback)
+    // and a scroll started mid-change gets dropped.
+    const frame = requestAnimationFrame(() =>
+      nextRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [checkResult]);
 
   const allGapsFilled =
     payload !== null &&
@@ -216,9 +230,11 @@ export function PracticeSession({
               {checkResult.explanation && <p className="text-sm text-gray-700">{checkResult.explanation}</p>}
             </div>
           )}
-          <Button onClick={handleNext}>
-            {index + 1 < taskIds.length ? "Next →" : "Finish"}
-          </Button>
+          <div ref={nextRef} className="flex scroll-mb-32 flex-col">
+            <Button onClick={handleNext}>
+              {index + 1 < taskIds.length ? "Next →" : "Finish"}
+            </Button>
+          </div>
         </div>
       )}
     </div>

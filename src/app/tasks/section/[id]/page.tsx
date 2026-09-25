@@ -23,7 +23,6 @@ export default function SectionPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [studentName, setStudentName] = useState<string | null>(null);
-  const [sectionName, setSectionName] = useState<string | null>(null);
   const [multipleSections, setMultipleSections] = useState(false);
   const [types, setTypes] = useState<TypeSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +42,6 @@ export default function SectionPage() {
     ])
       .then(([sectionsData, categoriesData]) => {
         const sections: SectionSummary[] = sectionsData.sections ?? [];
-        setSectionName(sections.find((s) => s.id === params.id)?.name ?? null);
         setMultipleSections(sections.length > 1);
         setTypes(categoriesData.types ?? []);
       })
@@ -59,18 +57,17 @@ export default function SectionPage() {
 
   const isEmpty = !loading && types.length === 0;
 
+  // Tall bottom padding: phone browsers (Telegram, iOS Safari) float their toolbar over
+  // the page bottom, so the last topic card needs room to scroll up clear of it.
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10 md:max-w-3xl lg:max-w-4xl">
+    <div className="mx-auto max-w-2xl px-6 pt-10 pb-40 md:max-w-3xl lg:max-w-4xl">
       {multipleSections && (
         <Link href="/tasks" className="mb-4 inline-block text-sm text-blue-600 hover:underline">
           ← Back to sections
         </Link>
       )}
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
-          <p className="text-gray-600">{sectionName ?? "What do you want to practice?"}</p>
-        </div>
+        <h1 className="text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
         <button onClick={handleNotYou} className="text-sm text-blue-600 hover:underline">
           Not me
         </button>
@@ -81,12 +78,6 @@ export default function SectionPage() {
 
       {types.map((t) => (
         <div key={t.type} className="mb-8 flex flex-col gap-5">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t.label}
-            </div>
-            <div className="text-sm text-gray-500">{t.description}</div>
-          </div>
 
           {/* A type without topics is practiced as a single pool. */}
           <Link href={`/tasks/practice?type=${t.type}&section=${params.id}`}>
