@@ -19,7 +19,6 @@ const NAMED: Record<string, CategoryTheme> = {
   "Essential": PALETTE[2],
   "Phrasal Verbs": PALETTE[3],
   "Free Flow": PALETTE[4],
-  "Prepositions": PALETTE[4], // Free Flow's pre-rename name (see lib/topics)
   "Fixed Expressions": PALETTE[5],
 };
 
