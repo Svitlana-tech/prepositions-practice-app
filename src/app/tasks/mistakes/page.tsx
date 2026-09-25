@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { getStoredStudentName } from "@/lib/studentName";
 import { getMistakeIds } from "@/lib/mistakes";
 import { shuffle } from "@/lib/shuffle";
@@ -35,9 +34,6 @@ export default function FixMistakesPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 md:max-w-3xl lg:max-w-4xl">
-      <Link href="/tasks" className="mb-4 inline-block text-sm text-blue-600 hover:underline">
-        ← Back to exercises
-      </Link>
       <h1 className="mb-6 text-2xl font-semibold text-gray-900">Fix Mistakes</h1>
       {taskIds.length === 0 ? (
         <p className="text-gray-600">No mistakes to fix — great job! 🎉</p>

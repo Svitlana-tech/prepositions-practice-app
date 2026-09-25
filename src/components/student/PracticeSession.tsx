@@ -43,8 +43,15 @@ export function PracticeSession({
   const [correctCount, setCorrectCount] = useState(0);
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [finished, setFinished] = useState(false);
-  // Tasks that close a topic's previous cycle — answered, but not counted as seen in the new one.
-  const lastOfCycleRef = useRef<Set<string>>(new Set());
+  // The session's changes to the "seen" list, held back until the set is finished: a
+  // session abandoned halfway (window closed, Back pressed) leaves the list untouched, so
+  // its sentences go back into the pool. `lastOfCycle` tasks close a topic's previous
+  // cycle — answered, but not counted as seen in the new one.
+  const pendingSeenRef = useRef<{ forget: string[]; lastOfCycle: Set<string>; committed: boolean }>({
+    forget: [],
+    lastOfCycle: new Set(),
+    committed: false,
+  });
 
   useEffect(() => {
     if (presetTaskIds) {
@@ -71,8 +78,8 @@ export function PracticeSession({
         return res.json();
       })
       .then((data) => {
-        forgetSeen(data.forgetSeenIds ?? []);
-        lastOfCycleRef.current = new Set(data.lastOfCycleIds ?? []);
+        pendingSeenRef.current.forget = data.forgetSeenIds ?? [];
+        pendingSeenRef.current.lastOfCycle = new Set(data.lastOfCycleIds ?? []);
         setTaskIds(data.taskIds);
       })
       .catch((e) => setError(e.message));
@@ -106,6 +113,17 @@ export function PracticeSession({
     else setFinished(true);
   }, [taskIds, index]);
 
+  // The set was completed — only now do its sentences count as done for this cycle.
+  useEffect(() => {
+    const pending = pendingSeenRef.current;
+    if (!finished || pending.committed) return;
+    pending.committed = true;
+    forgetSeen(pending.forget);
+    for (const r of records) {
+      if (!pending.lastOfCycle.has(r.taskId)) markSeen(r.taskId);
+    }
+  }, [finished, records]);
+
   const allGapsFilled =
     payload !== null &&
     payload.gaps.every((g) => currentAnswers[g.id] !== undefined && currentAnswers[g.id] !== "");
@@ -122,7 +140,6 @@ export function PracticeSession({
     const correct = result.score === result.maxScore;
     setCheckResult(result);
     recordFirstTry(taskId, correct);
-    if (!lastOfCycleRef.current.has(taskId)) markSeen(taskId);
     if (correct) setCorrectCount((c) => c + 1);
     if (payload) {
       const gapId = payload.gaps[0]?.id ?? "gap1";
@@ -163,6 +180,8 @@ export function PracticeSession({
     return <SessionResults records={records} onRepeat={onRepeat} />;
   }
 
+  const isCorrect = !!checkResult && checkResult.score === checkResult.maxScore;
+
   if (!taskIds || !payload) {
     return <p className="text-gray-500">Loading...</p>;
   }
@@ -189,20 +208,14 @@ export function PracticeSession({
 
       {checkResult && (
         <div className="flex flex-col gap-3">
-          <div
-            className={`rounded-lg p-4 ${
-              checkResult.score === checkResult.maxScore
-                ? "bg-green-50 text-green-800"
-                : "bg-red-50 text-red-800"
-            }`}
-          >
-            {checkResult.score === checkResult.maxScore
-              ? "Correct!"
-              : `${checkResult.score} / ${checkResult.maxScore} correct.`}
-            {checkResult.explanation && (
-              <p className="mt-2 text-sm text-gray-700">{checkResult.explanation}</p>
-            )}
-          </div>
+          {/* A wrong answer is already called out (with the right one) under the cards,
+              so its box only carries the explanation — and is skipped if there is none. */}
+          {(isCorrect || checkResult.explanation) && (
+            <div className={`rounded-lg p-4 ${isCorrect ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}>
+              {isCorrect && <div className="mb-2">Correct!</div>}
+              {checkResult.explanation && <p className="text-sm text-gray-700">{checkResult.explanation}</p>}
+            </div>
+          )}
           <Button onClick={handleNext}>
             {index + 1 < taskIds.length ? "Next →" : "Finish"}
           </Button>

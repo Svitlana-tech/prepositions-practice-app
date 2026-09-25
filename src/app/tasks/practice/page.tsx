@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { getStoredStudentName } from "@/lib/studentName";
 import { PracticeSession } from "@/components/student/PracticeSession";
 import { isTaskType } from "@/lib/taskTypes";
@@ -23,7 +22,6 @@ function PracticeScreen() {
   const typeParam = searchParams.get("type");
   const topicParam = searchParams.get("topic");
   const sectionParam = searchParams.get("section");
-  const backHref = sectionParam ? `/tasks/section/${sectionParam}` : "/tasks";
 
   useEffect(() => {
     const name = getStoredStudentName();
@@ -38,9 +36,6 @@ function PracticeScreen() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 md:max-w-3xl lg:max-w-4xl">
-      <Link href={backHref} className="mb-4 inline-block text-sm text-blue-600 hover:underline">
-        ← Back to exercises
-      </Link>
       {isTaskType(typeParam) ? (
         <PracticeSession
           key={round}
