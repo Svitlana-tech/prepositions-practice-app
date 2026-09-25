@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isTaskType } from "@/lib/taskTypes";
 import { shuffle } from "@/lib/shuffle";
+import { ACADEMIC_TOPIC_NAME, FREE_FLOW_TOPIC_NAMES } from "@/lib/topics";
 
 const SESSION_SIZE = 10;
 
@@ -9,7 +10,7 @@ const SESSION_SIZE = 10;
  *  up to this many of the student's own mistakes (sent by the client), from any topic. */
 const MIX_MISTAKES = 2;
 /** Topics practiced only on their own, never pulled into the mix's topic questions. */
-const MIX_EXCLUDED_TOPIC_NAMES = ["Academic Writing", "Prepositions"];
+const MIX_EXCLUDED_TOPIC_NAMES = [ACADEMIC_TOPIC_NAME, ...FREE_FLOW_TOPIC_NAMES];
 
 /**
  * Public: build one practice session of a question type. With `categoryId` it's up

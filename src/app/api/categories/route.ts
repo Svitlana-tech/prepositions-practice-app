@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { AVAILABLE_TASK_TYPES } from "@/lib/taskTypes";
-
-/** Topics that open the endless full-screen cards deck. Every other topic is a
- *  10-question test drawn at random from that topic (see practice/start). */
-const ENDLESS_TOPIC_NAMES = new Set(["Prepositions"]);
+import { isFreeFlowTopic } from "@/lib/topics";
 
 /**
  * Public: the student menu, question type first. Each playable type reports how
@@ -42,9 +39,9 @@ export async function GET(request: NextRequest) {
       },
       _count: { _all: true },
     }),
-    // How many published FILL_IN_SENTENCE tasks per topic are cards-mode — an endless
-    // topic (ENDLESS_TOPIC_NAMES) only gets the full-screen deck if every task qualifies;
-    // otherwise it falls back to the usual 10-question session.
+    // How many published FILL_IN_SENTENCE tasks per topic are cards-mode — the Free Flow
+    // topic (the only endless one) only gets the full-screen deck if every task qualifies,
+    // otherwise it falls back to the usual 10-question session like every other topic.
     prisma.task.groupBy({
       by: ["categoryId"],
       where: {
@@ -73,7 +70,7 @@ export async function GET(request: NextRequest) {
         name: c.name,
         count: c._count.tasks,
         endless:
-          ENDLESS_TOPIC_NAMES.has(c.name) &&
+          isFreeFlowTopic(c.name) &&
           info.type === "FILL_IN_SENTENCE" &&
           cardsCountByCategoryId.get(c.id) === c._count.tasks,
       })),

@@ -18,7 +18,8 @@ const NAMED: Record<string, CategoryTheme> = {
   "Academic Writing": PALETTE[1],
   "Essential": PALETTE[2],
   "Phrasal Verbs": PALETTE[3],
-  "Prepositions": PALETTE[4],
+  "Free Flow": PALETTE[4],
+  "Prepositions": PALETTE[4], // Free Flow's pre-rename name (see lib/topics)
   "Fixed Expressions": PALETTE[5],
 };
 
@@ -29,9 +30,6 @@ export function getCategoryTheme(name: string): CategoryTheme {
   return PALETTE[hash % PALETTE.length];
 }
 
-/** The "practice everything at once" banner — matches the spec's
- * "Daily Mix" banner (dark card, teal accent). */
-export const MIX_THEME = { bg: "#2B2D42", text: "#FFFFFF", accent: "#2A9D8F" };
-
-/** The "Fix Mistakes" button — the student's own wrong answers, red-tinted. */
+/** Fix Mistakes' own red tint — the Daily Mix button uses it (the Fix Mistakes tile
+ *  itself is painted in its grid row's color). */
 export const FIX_MISTAKES_THEME: CategoryTheme = { bg: "#FFEBEE", accent: "#C62828", icon: "🛠️" };

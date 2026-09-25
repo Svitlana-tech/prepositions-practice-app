@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { clearStoredStudentName, getStoredStudentName } from "@/lib/studentName";
-import { FIX_MISTAKES_THEME, getCategoryTheme, MIX_THEME } from "@/lib/categoryTheme";
+import { FIX_MISTAKES_THEME, getCategoryTheme } from "@/lib/categoryTheme";
+import { ACADEMIC_TOPIC_NAME, isFreeFlowTopic } from "@/lib/topics";
 import { getMistakeIds } from "@/lib/mistakes";
 
 type TopicSummary = { id: string; name: string; count: number; endless?: boolean };
@@ -76,79 +77,166 @@ export default function SectionPage() {
       {loading && <p className="text-gray-500">Loading...</p>}
       {isEmpty && <p className="text-gray-500">Nothing here yet — check back later.</p>}
 
-      {types.map((t) => (
-        <div key={t.type} className="mb-8 flex flex-col gap-5">
+      {types.map((t) => {
+        const byName = new Map(t.topics.map((topic) => [topic.name, topic]));
+        const hrefFor = (topic: TopicSummary) =>
+          topic.endless
+            ? `/tasks/cards/${topic.id}`
+            : `/tasks/practice?type=${t.type}&topic=${topic.id}&section=${params.id}`;
+        const freeFlow = t.topics.find((topic) => isFreeFlowTopic(topic.name));
+        const placed = new Set(GRID_ROWS.flatMap((row) => row.items));
+        // Topics added later that the layout doesn't know yet still get a tile, at the end.
+        const extras = t.topics.filter((topic) => !placed.has(topic.name) && topic !== freeFlow);
 
-          {/* A type without topics is practiced as a single pool. */}
-          <Link href={`/tasks/practice?type=${t.type}&section=${params.id}`}>
-            <div
-              className="flex items-center justify-between rounded-2xl p-5 transition-transform hover:scale-[1.01]"
-              style={{ background: MIX_THEME.bg, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
-            >
-              <div>
-                <div className="text-lg font-bold" style={{ color: MIX_THEME.text }}>
-                  {t.topics.length > 0 ? "⚡ Daily Mix" : "▶ Start practice"}
-                </div>
-                <div className="text-sm" style={{ color: MIX_THEME.accent }}>
-                  {t.topics.length > 0
-                    ? "10 questions from all topics + 2 of your mistakes"
-                    : `${t.totalCount} question(s)`}
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          <Link href="/tasks/mistakes">
-            <div
-              className="flex items-center gap-3 rounded-2xl p-5 transition-transform hover:scale-[1.01]"
-              style={{ background: FIX_MISTAKES_THEME.bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
-            >
-              <div className="text-2xl leading-none">{FIX_MISTAKES_THEME.icon}</div>
-              <div>
-                <div className="text-lg font-bold" style={{ color: FIX_MISTAKES_THEME.accent }}>
-                  Fix Mistakes
-                </div>
-                <div className="text-sm opacity-70" style={{ color: FIX_MISTAKES_THEME.accent }}>
-                  {mistakeCount === 0 ? "No mistakes yet" : `${mistakeCount} sentence(s) to fix`}
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          {t.topics.length > 0 && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {t.topics.map((topic) => {
-                const theme = getCategoryTheme(topic.name);
+        const tiles = [
+          ...GRID_ROWS.flatMap((row) => {
+            const theme = getCategoryTheme(row.colorOf);
+            return row.items.map((item) => {
+              if (item === FIX_MISTAKES) {
                 return (
-                  <Link
-                    key={topic.id}
-                    href={
-                      topic.endless
-                        ? `/tasks/cards/${topic.id}`
-                        : `/tasks/practice?type=${t.type}&topic=${topic.id}&section=${params.id}`
-                    }
-                  >
-                    <div
-                      className="flex h-full items-start gap-3 rounded-2xl p-4 transition-transform hover:scale-[1.01]"
-                      style={{ background: theme.bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
-                    >
-                      <div className="text-2xl leading-none">{theme.icon}</div>
-                      <div>
-                        <div className="font-semibold" style={{ color: theme.accent }}>
-                          {topic.name}
-                        </div>
-                        <div className="text-sm opacity-70" style={{ color: theme.accent }}>
-                          {topic.endless ? "Endless practice" : `${topic.count} question(s)`}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                  <SquareTile
+                    key={item}
+                    href="/tasks/mistakes"
+                    icon={FIX_MISTAKES_THEME.icon}
+                    name="Fix Mistakes"
+                    subtitle={mistakeCount === 0 ? "none yet" : `${mistakeCount} to fix`}
+                    bg={theme.bg}
+                    accent={theme.accent}
+                  />
                 );
-              })}
+              }
+              const topic = byName.get(item);
+              if (!topic) return null;
+              return (
+                <SquareTile
+                  key={topic.id}
+                  href={hrefFor(topic)}
+                  icon={getCategoryTheme(topic.name).icon}
+                  name={topic.name}
+                  subtitle={`${topic.count} cards`}
+                  bg={theme.bg}
+                  accent={theme.accent}
+                />
+              );
+            });
+          }),
+          ...extras.map((topic) => {
+            const theme = getCategoryTheme(topic.name);
+            return (
+              <SquareTile
+                key={topic.id}
+                href={hrefFor(topic)}
+                icon={theme.icon}
+                name={topic.name}
+                subtitle={`${topic.count} cards`}
+                bg={theme.bg}
+                accent={theme.accent}
+              />
+            );
+          }),
+        ];
+
+        return (
+          <div key={t.type} className="mb-8 flex flex-col">
+            <div className="grid grid-cols-2 gap-3">{tiles}</div>
+
+            <div className="mt-8 flex flex-col gap-3">
+              <WideTile
+                href={`/tasks/practice?type=${t.type}&section=${params.id}`}
+                title="⚡ Daily Mix"
+                subtitle="10 random cards"
+                bg={FIX_MISTAKES_THEME.bg}
+                accent={FIX_MISTAKES_THEME.accent}
+              />
+              {freeFlow && (
+                <WideTile
+                  href={hrefFor(freeFlow)}
+                  title={`${getCategoryTheme(freeFlow.name).icon} Free Flow`}
+                  subtitle="Endless practice"
+                  bg={getCategoryTheme(freeFlow.name).bg}
+                  accent={getCategoryTheme(freeFlow.name).accent}
+                />
+              )}
             </div>
-          )}
-        </div>
-      ))}
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+const FIX_MISTAKES = "Fix Mistakes";
+
+/** The 2-column square grid, row by row; each row is painted in one topic's colors. */
+const GRID_ROWS = [
+  { items: ["Dependent", "Essential"], colorOf: "Dependent" },
+  { items: ["Fixed Expressions", "Phrasal Verbs"], colorOf: "Essential" },
+  { items: [ACADEMIC_TOPIC_NAME, FIX_MISTAKES], colorOf: ACADEMIC_TOPIC_NAME },
+];
+
+/** A square topic button: icon on top, then the name one word per line, centered. */
+function SquareTile({
+  href,
+  icon,
+  name,
+  subtitle,
+  bg,
+  accent,
+}: {
+  href: string;
+  icon: string;
+  name: string;
+  subtitle: string;
+  bg: string;
+  accent: string;
+}) {
+  return (
+    <Link href={href}>
+      <div
+        className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl p-3 text-center transition-transform hover:scale-[1.02]"
+        style={{ background: bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+      >
+        <div className="text-4xl leading-none">{icon}</div>
+        <div className="text-lg font-bold leading-tight" style={{ color: accent }}>
+          {name.split(" ").map((word) => (
+            <div key={word}>{word}</div>
+          ))}
+        </div>
+        <div className="text-xs opacity-70" style={{ color: accent }}>
+          {subtitle}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/** A full-width button below the grid: centered, larger title. */
+function WideTile({
+  href,
+  title,
+  subtitle,
+  bg,
+  accent,
+}: {
+  href: string;
+  title: string;
+  subtitle: string;
+  bg: string;
+  accent: string;
+}) {
+  return (
+    <Link href={href}>
+      <div
+        className="rounded-2xl p-5 text-center transition-transform hover:scale-[1.01]"
+        style={{ background: bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+      >
+        <div className="text-2xl font-bold" style={{ color: accent }}>
+          {title}
+        </div>
+        <div className="text-sm opacity-70" style={{ color: accent }}>
+          {subtitle}
+        </div>
+      </div>
+    </Link>
   );
 }
