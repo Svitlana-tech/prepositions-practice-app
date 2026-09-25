@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const sectionId = request.nextUrl.searchParams.get("sectionId") || undefined;
   const playableTypes = AVAILABLE_TASK_TYPES.map((t) => t.type);
 
-  const [categories, countsByType, cardsCountsByCategory] = await Promise.all([
+  const [categories, countsByType] = await Promise.all([
     prisma.category.findMany({
       where: {
         taskType: { in: playableTypes },
@@ -39,41 +39,20 @@ export async function GET(request: NextRequest) {
       },
       _count: { _all: true },
     }),
-    // How many published FILL_IN_SENTENCE tasks per topic are cards-mode — the Free Flow
-    // topic (the only endless one) only gets the full-screen deck if every task qualifies,
-    // otherwise it falls back to the usual 10-question session like every other topic.
-    prisma.task.groupBy({
-      by: ["categoryId"],
-      where: {
-        isPublished: true,
-        inBank: true,
-        type: "FILL_IN_SENTENCE",
-        categoryId: { not: null },
-        payload: { path: ["displayMode"], equals: "cards" },
-      },
-      _count: { _all: true },
-    }),
   ]);
 
   const totalByType = new Map(countsByType.map((row) => [row.type, row._count._all]));
-  const cardsCountByCategoryId = new Map(cardsCountsByCategory.map((row) => [row.categoryId, row._count._all]));
 
   const types = AVAILABLE_TASK_TYPES.map((info) => ({
     type: info.type,
     label: info.label,
     description: info.description,
     totalCount: totalByType.get(info.type) ?? 0,
+    // Free Flow isn't a topic of its own — it practices every other topic (see
+    // practice/free-flow) — so a category still carrying that name stays off the menu.
     topics: categories
-      .filter((c) => c.taskType === info.type)
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        count: c._count.tasks,
-        endless:
-          isFreeFlowTopic(c.name) &&
-          info.type === "FILL_IN_SENTENCE" &&
-          cardsCountByCategoryId.get(c.id) === c._count.tasks,
-      })),
+      .filter((c) => c.taskType === info.type && !isFreeFlowTopic(c.name))
+      .map((c) => ({ id: c.id, name: c.name, count: c._count.tasks })),
   })).filter((t) => t.totalCount > 0);
 
   return NextResponse.json({ types });

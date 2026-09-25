@@ -5,10 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { clearStoredStudentName, getStoredStudentName } from "@/lib/studentName";
 import { FIX_MISTAKES_THEME, getCategoryTheme } from "@/lib/categoryTheme";
-import { ACADEMIC_TOPIC_NAME, isFreeFlowTopic } from "@/lib/topics";
+import { ACADEMIC_TOPIC_NAME, FREE_FLOW_TOPIC_NAMES } from "@/lib/topics";
 import { getMistakeIds } from "@/lib/mistakes";
 
-type TopicSummary = { id: string; name: string; count: number; endless?: boolean };
+type TopicSummary = { id: string; name: string; count: number };
 
 type TypeSummary = {
   type: string;
@@ -80,13 +80,11 @@ export default function SectionPage() {
       {types.map((t) => {
         const byName = new Map(t.topics.map((topic) => [topic.name, topic]));
         const hrefFor = (topic: TopicSummary) =>
-          topic.endless
-            ? `/tasks/cards/${topic.id}`
-            : `/tasks/practice?type=${t.type}&topic=${topic.id}&section=${params.id}`;
-        const freeFlow = t.topics.find((topic) => isFreeFlowTopic(topic.name));
+          `/tasks/practice?type=${t.type}&topic=${topic.id}&section=${params.id}`;
         const placed = new Set(GRID_ROWS.flatMap((row) => row.items));
         // Topics added later that the layout doesn't know yet still get a tile, at the end.
-        const extras = t.topics.filter((topic) => !placed.has(topic.name) && topic !== freeFlow);
+        const extras = t.topics.filter((topic) => !placed.has(topic.name));
+        const freeFlowTheme = getCategoryTheme(FREE_FLOW_TOPIC_NAMES[0]);
 
         const tiles = [
           ...GRID_ROWS.flatMap((row) => {
@@ -113,7 +111,6 @@ export default function SectionPage() {
                   href={hrefFor(topic)}
                   icon={getCategoryTheme(topic.name).icon}
                   name={topic.name}
-                  subtitle={`${topic.count} cards`}
                   bg={theme.bg}
                   accent={theme.accent}
                 />
@@ -128,7 +125,6 @@ export default function SectionPage() {
                 href={hrefFor(topic)}
                 icon={theme.icon}
                 name={topic.name}
-                subtitle={`${topic.count} cards`}
                 bg={theme.bg}
                 accent={theme.accent}
               />
@@ -148,15 +144,12 @@ export default function SectionPage() {
                 bg={FIX_MISTAKES_THEME.bg}
                 accent={FIX_MISTAKES_THEME.accent}
               />
-              {freeFlow && (
-                <WideTile
-                  href={hrefFor(freeFlow)}
-                  title={`${getCategoryTheme(freeFlow.name).icon} Free Flow`}
-                  subtitle="Endless practice"
-                  bg={getCategoryTheme(freeFlow.name).bg}
-                  accent={getCategoryTheme(freeFlow.name).accent}
-                />
-              )}
+              <WideTile
+                href="/tasks/free-flow"
+                title={`${freeFlowTheme.icon} Free Flow`}
+                bg={freeFlowTheme.bg}
+                accent={freeFlowTheme.accent}
+              />
             </div>
           </div>
         );
@@ -186,7 +179,7 @@ function SquareTile({
   href: string;
   icon: string;
   name: string;
-  subtitle: string;
+  subtitle?: string;
   bg: string;
   accent: string;
 }) {
@@ -202,9 +195,11 @@ function SquareTile({
             <div key={word}>{word}</div>
           ))}
         </div>
-        <div className="text-xs opacity-70" style={{ color: accent }}>
-          {subtitle}
-        </div>
+        {subtitle && (
+          <div className="text-xs opacity-70" style={{ color: accent }}>
+            {subtitle}
+          </div>
+        )}
       </div>
     </Link>
   );
@@ -220,7 +215,7 @@ function WideTile({
 }: {
   href: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   bg: string;
   accent: string;
 }) {
@@ -233,9 +228,11 @@ function WideTile({
         <div className="text-2xl font-bold" style={{ color: accent }}>
           {title}
         </div>
-        <div className="text-sm opacity-70" style={{ color: accent }}>
-          {subtitle}
-        </div>
+        {subtitle && (
+          <div className="text-sm opacity-70" style={{ color: accent }}>
+            {subtitle}
+          </div>
+        )}
       </div>
     </Link>
   );
