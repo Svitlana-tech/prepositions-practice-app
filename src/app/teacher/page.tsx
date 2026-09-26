@@ -64,11 +64,11 @@ export default function TeacherDashboard() {
   const typeGroups = useMemo(() => {
     return TASK_TYPES.map((info) => {
       const typeTasks = filtered.filter((t) => t.type === info.type);
-      const byTopic = new Map<string, { name: string; tasks: TaskSummary[] }>();
+      const byTopic = new Map<string, { id: string; name: string; tasks: TaskSummary[] }>();
       for (const task of typeTasks) {
         const key = task.categoryId ?? NO_TOPIC;
         const name = task.category?.name ?? "No topic";
-        if (!byTopic.has(key)) byTopic.set(key, { name, tasks: [] });
+        if (!byTopic.has(key)) byTopic.set(key, { id: key, name, tasks: [] });
         byTopic.get(key)!.tasks.push(task);
       }
       const topics = [...byTopic.values()].sort((a, b) => {
@@ -126,9 +126,15 @@ export default function TeacherDashboard() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Task Bank</h1>
-        <Link href="/teacher/tasks/new">
-          <Button>+ New Task</Button>
-        </Link>
+        <div className="flex gap-2">
+          {/* A plain link: the browser saves the Word file the API sends back. */}
+          <a href="/api/teacher/export" download>
+            <Button variant="secondary">Download all (Word)</Button>
+          </a>
+          <Link href="/teacher/tasks/new">
+            <Button>+ New Task</Button>
+          </Link>
+        </div>
       </div>
 
       {!loading && tasks.length > 0 && (
@@ -167,6 +173,15 @@ export default function TeacherDashboard() {
                       <span className="font-normal text-gray-500">({topic.tasks.length})</span>
                     </summary>
                     <div className="flex flex-col gap-3 border-t border-gray-100 p-4">
+                      {topic.id !== NO_TOPIC && (
+                        <a
+                          href={`/api/teacher/export?categoryId=${topic.id}`}
+                          download
+                          className="self-end text-sm font-medium text-blue-600 hover:underline"
+                        >
+                          Download {topic.name} (Word)
+                        </a>
+                      )}
                       {topic.tasks.map(renderTaskCard)}
                     </div>
                   </details>
