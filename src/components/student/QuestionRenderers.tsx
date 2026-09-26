@@ -62,6 +62,8 @@ export function FillInBlankQuestion(props: {
   onChange: (gapId: string, value: string) => void;
   checkResult: CheckResult | null;
   instructions?: string | null;
+  /** After Check: show the explanation (the cards picker shows it in place of the cards). */
+  showExplanation?: boolean;
 }) {
   if (props.payload.displayMode === "cards" && props.payload.gaps.length === 1) {
     return (
@@ -71,10 +73,18 @@ export function FillInBlankQuestion(props: {
         answers={props.answers}
         onChange={props.onChange}
         checkResult={props.checkResult}
+        showExplanation={props.showExplanation}
       />
     );
   }
-  return <TypedFillInBlankQuestion {...props} />;
+  return (
+    <>
+      <TypedFillInBlankQuestion {...props} />
+      {props.showExplanation && props.checkResult?.explanation && (
+        <p className="whitespace-pre-line text-sm text-gray-700">{props.checkResult.explanation}</p>
+      )}
+    </>
+  );
 }
 
 /**

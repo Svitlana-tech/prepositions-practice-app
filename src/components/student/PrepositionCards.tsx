@@ -116,6 +116,9 @@ const STYLE = `
 }
 `;
 
+/** How long a wrong answer's red reaction plays before the right card is lit up. */
+const REVEAL_DELAY_MS = 500;
+
 type ExplanationSentence = { text: string; isExample: boolean };
 type ExplanationBlock = { phrase: string | null; sentences: ExplanationSentence[] };
 
@@ -188,6 +191,9 @@ function useCardLayout(options: string[]) {
  * Two interaction contracts, chosen by `standalone`:
  * - false (default): a tap just reports the selection via onChange, like every other
  *   question type — correctness is revealed once by an externally-driven checkResult.
+ *   A wrong answer gets its red reaction, then (REVEAL_DELAY_MS later) the right card lights
+ *   up and fills the gap the same way a correct answer does. The explanation is only shown,
+ *   in place of the cards, while the session sets `showExplanation`.
  *   Used by the normal dispatcher (bounded practice sessions, teacher preview).
  * - true: the component owns its own Confirm button and an unlimited-attempts retry
  *   loop — wrong taps stay marked red and the student can keep trying. Used only by the
@@ -200,6 +206,7 @@ export function PrepositionCardsQuestion({
   onChange,
   checkResult,
   standalone = false,
+  showExplanation = false,
   checkAnswer,
   onSolved,
 }: {
@@ -208,6 +215,8 @@ export function PrepositionCardsQuestion({
   onChange: (gapId: string, value: string) => void;
   checkResult: CheckResult | null;
   standalone?: boolean;
+  /** non-standalone only: show the checked question's explanation instead of the cards. */
+  showExplanation?: boolean;
   /** standalone only: verifies one guess, called per Confirm press. */
   checkAnswer?: (
     word: string
@@ -235,6 +244,8 @@ export function PrepositionCardsQuestion({
   // Only meaningful once solved — flips the question screen over to show the full rule
   // text in place of the card grid. Purely a local view toggle, never auto-shown.
   const [showFullExplanation, setShowFullExplanation] = useState(false);
+  // Non-standalone, wrong answer: the right card has been lit up after the red reaction.
+  const [revealed, setRevealed] = useState(false);
 
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const rippleRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -296,11 +307,20 @@ export function PrepositionCardsQuestion({
     if (isCorrect && selected) {
       playRipple(selected);
       vibrate([10, 40, 10]);
-    } else if (selected) {
+      return;
+    }
+    if (selected) {
       setWrongWords((prev) => new Set(prev).add(selected));
       playWrongReaction(selected);
       vibrate(20);
     }
+    const answer = checkResult.reveal.correctAnswers?.[gapId];
+    if (!answer) return;
+    const timer = window.setTimeout(() => {
+      setRevealed(true);
+      playRipple(answer);
+    }, REVEAL_DELAY_MS);
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkResult]);
 
@@ -347,16 +367,26 @@ export function PrepositionCardsQuestion({
     nonStandaloneResult?.perGapResults.find((r) => r.gapId === gapId)?.correct ?? false;
   const revealedAnswer = nonStandaloneResult?.reveal.correctAnswers?.[gapId];
 
-  const blankShown = standalone ? solved : !!nonStandaloneResult && isCorrectNonStandalone;
-  const blankWord = blankShown ? selected : null;
-  const blankWrong = !standalone && !!nonStandaloneResult && !isCorrectNonStandalone;
+  const blankShown = standalone ? solved : !!nonStandaloneResult && (isCorrectNonStandalone || revealed);
+  const blankWord = !blankShown ? null : revealed ? revealedAnswer ?? null : selected;
+  const blankWrong = !standalone && !!nonStandaloneResult && !isCorrectNonStandalone && !revealed;
 
   const cardsDisabled = standalone ? solved : !!checkResult;
 
+  const shownExplanation = standalone ? explanation : nonStandaloneResult?.explanation ?? null;
+  const shownExplanationIsLong = standalone ? explanationIsLong : !!nonStandaloneResult?.explanationIsLong;
+  // Only rule-bank text follows the "Phrase - explanation. Example." format; a task's own
+  // short explanation is shown as one plain paragraph.
   const explanationBlocks = useMemo(
-    () => (explanation ? parseExplanationText(explanation) : []),
-    [explanation]
+    () =>
+      !shownExplanation
+        ? []
+        : shownExplanationIsLong
+          ? parseExplanationText(shownExplanation)
+          : [{ phrase: null, sentences: [{ text: shownExplanation, isExample: false }] }],
+    [shownExplanation, shownExplanationIsLong]
   );
+  const explanationOpen = standalone ? showFullExplanation : showExplanation && !!shownExplanation;
 
   return (
     <div
@@ -379,7 +409,7 @@ export function PrepositionCardsQuestion({
         {after}
       </p>
 
-      {standalone && showFullExplanation ? (
+      {explanationOpen ? (
         <div
           className="explanation-scroll rounded-2xl bg-white p-5 text-left text-base leading-relaxed"
           style={{ color: "var(--sentence)", border: "1.5px solid var(--card-border)" }}
@@ -403,7 +433,8 @@ export function PrepositionCardsQuestion({
             const isWrong = wrongWords.has(word);
             const isCorrectCard =
               (standalone && solved && selected === word) ||
-              (!standalone && nonStandaloneResult && isCorrectNonStandalone && selected === word);
+              (!standalone && nonStandaloneResult && isCorrectNonStandalone && selected === word) ||
+              (revealed && revealedAnswer === word);
             return (
               <div key={word} className="card-wrap" style={{ position: "relative" }}>
                 <button
@@ -480,14 +511,7 @@ export function PrepositionCardsQuestion({
             )}
           </div>
         )
-      ) : (
-        blankWrong &&
-        revealedAnswer && (
-          <p className="text-center text-sm font-medium" style={{ color: "var(--wrong)" }}>
-            Not quite. Correct answer: &quot;{revealedAnswer}&quot;
-          </p>
-        )
-      )}
+      ) : null}
     </div>
   );
 }

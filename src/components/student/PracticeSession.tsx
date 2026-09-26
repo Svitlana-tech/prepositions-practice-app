@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { getCategoryTheme } from "@/lib/categoryTheme";
 import type { TaskType } from "@/lib/taskSchemas";
 import { getMistakeIds, recordFirstTry, removeMistake } from "@/lib/mistakes";
 import { forgetSeen, getSeenIds, markSeen } from "@/lib/seenTasks";
@@ -13,6 +14,11 @@ import {
   type CheckResult,
   type CurrentAnswers,
 } from "@/components/student/QuestionRenderers";
+
+// The after-Check buttons borrow the topic menu's colors: Explanation looks like the
+// Dependent tile (green), Next like the Phrasal Verbs tile (painted in Essential's blue).
+const EXPLANATION_THEME = getCategoryTheme("Dependent");
+const NEXT_THEME = getCategoryTheme("Essential");
 
 export function PracticeSession({
   taskType = null,
@@ -40,6 +46,7 @@ export function PracticeSession({
   const [instructions, setInstructions] = useState<string | null>(null);
   const [currentAnswers, setCurrentAnswers] = useState<CurrentAnswers>({});
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
+  const [showExplanation, setShowExplanation] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [finished, setFinished] = useState(false);
@@ -92,6 +99,7 @@ export function PracticeSession({
     setInstructions(null);
     setCurrentAnswers({});
     setCheckResult(null);
+    setShowExplanation(false);
     const taskId = taskIds[index];
     fetch(`/api/tasks/${taskId}`)
       .then(async (res) => {
@@ -127,7 +135,7 @@ export function PracticeSession({
 
   // After Check, scroll the Next button into view with room to spare below it (its
   // scroll-mb) — at the very bottom it can end up under a phone browser's floating
-  // toolbar (e.g. Telegram's in-app browser). The explanation stays above it.
+  // toolbar (e.g. Telegram's in-app browser).
   useEffect(() => {
     if (!checkResult) return;
     // Next frame: the layout is still settling (Check button swapped for the feedback)
@@ -194,8 +202,6 @@ export function PracticeSession({
     return <SessionResults records={records} onRepeat={onRepeat} />;
   }
 
-  const isCorrect = !!checkResult && checkResult.score === checkResult.maxScore;
-
   if (!taskIds || !payload) {
     return <p className="text-gray-500">Loading...</p>;
   }
@@ -212,6 +218,7 @@ export function PracticeSession({
         onChange={(gapId, value) => setCurrentAnswers((prev) => ({ ...prev, [gapId]: value }))}
         checkResult={checkResult}
         instructions={instructions}
+        showExplanation={showExplanation}
       />
 
       {!checkResult && (
@@ -220,23 +227,41 @@ export function PracticeSession({
         </Button>
       )}
 
+      {/* Right or wrong, the answer shows in the sentence itself; the explanation opens
+          only on request, and Next skips straight to the following question. */}
       {checkResult && (
-        <div className="flex flex-col gap-3">
-          {/* A wrong answer is already called out (with the right one) under the cards,
-              so its box only carries the explanation — and is skipped if there is none. */}
-          {(isCorrect || checkResult.explanation) && (
-            <div className={`rounded-lg p-4 ${isCorrect ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}>
-              {isCorrect && <div className="mb-2">Correct!</div>}
-              {checkResult.explanation && <p className="text-sm text-gray-700">{checkResult.explanation}</p>}
-            </div>
+        <div ref={nextRef} className="flex scroll-mb-32 flex-col gap-3">
+          {checkResult.explanation && (
+            <SlimButton theme={EXPLANATION_THEME} onClick={() => setShowExplanation((open) => !open)}>
+              {showExplanation ? "Hide explanation" : "Explanation"}
+            </SlimButton>
           )}
-          <div ref={nextRef} className="flex scroll-mb-32 flex-col">
-            <Button onClick={handleNext}>
-              {index + 1 < taskIds.length ? "Next →" : "Finish"}
-            </Button>
-          </div>
+          <SlimButton theme={NEXT_THEME} onClick={handleNext}>
+            {index + 1 < taskIds.length ? "Next →" : "Finish"}
+          </SlimButton>
         </div>
       )}
     </div>
+  );
+}
+
+function SlimButton({
+  theme,
+  onClick,
+  children,
+}: {
+  theme: { bg: string; accent: string };
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full rounded-2xl py-2.5 text-lg font-bold transition-transform active:scale-[0.98]"
+      style={{ background: theme.bg, color: theme.accent, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+    >
+      {children}
+    </button>
   );
 }
