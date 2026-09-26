@@ -61,13 +61,13 @@ export default function SectionPage() {
   // Tall bottom padding: phone browsers (Telegram, iOS Safari) float their toolbar over
   // the page bottom, so the last topic card needs room to scroll up clear of it.
   return (
-    <div className="mx-auto max-w-2xl px-6 pt-10 pb-40 md:max-w-3xl lg:max-w-4xl">
+    <div className="mx-auto max-w-2xl px-6 pt-6 pb-40 md:max-w-3xl lg:max-w-4xl">
       {multipleSections && (
         <Link href="/tasks" className="mb-4 inline-block text-sm text-blue-600 hover:underline">
           ← Back to sections
         </Link>
       )}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
         <button onClick={handleNotYou} className="text-sm text-blue-600 hover:underline">
           Not me
@@ -92,12 +92,12 @@ export default function SectionPage() {
             return row.items.map((item) => {
               if (item === FIX_MISTAKES) {
                 return (
-                  <SquareTile
+                  <TopicTile
                     key={item}
                     href="/tasks/mistakes"
                     icon={FIX_MISTAKES_THEME.icon}
                     name="Fix Mistakes"
-                    subtitle={mistakeCount === 0 ? "none yet" : `${mistakeCount} to fix`}
+                    count={mistakeCount || undefined}
                     bg={theme.bg}
                     accent={theme.accent}
                   />
@@ -106,7 +106,7 @@ export default function SectionPage() {
               const topic = byName.get(item);
               if (!topic) return null;
               return (
-                <SquareTile
+                <TopicTile
                   key={topic.id}
                   href={hrefFor(topic)}
                   icon={getCategoryTheme(topic.name).icon}
@@ -120,7 +120,7 @@ export default function SectionPage() {
           ...extras.map((topic) => {
             const theme = getCategoryTheme(topic.name);
             return (
-              <SquareTile
+              <TopicTile
                 key={topic.id}
                 href={hrefFor(topic)}
                 icon={theme.icon}
@@ -136,7 +136,7 @@ export default function SectionPage() {
           <div key={t.type} className="mb-8 flex flex-col">
             <div className="grid grid-cols-2 gap-3">{tiles}</div>
 
-            <div className="mt-8 flex flex-col gap-3">
+            <div className="mt-6 flex flex-col gap-3">
               <WideTile
                 href={`/tasks/practice?type=${t.type}&section=${params.id}`}
                 title="⚡ Daily Mix"
@@ -160,46 +160,50 @@ export default function SectionPage() {
 
 const FIX_MISTAKES = "Fix Mistakes";
 
-/** The 2-column square grid, row by row; each row is painted in one topic's colors. */
+/** The 2-column topic grid, row by row; each row is painted in one topic's colors. */
 const GRID_ROWS = [
   { items: ["Dependent", "Essential"], colorOf: "Dependent" },
   { items: ["Fixed Expressions", "Phrasal Verbs"], colorOf: "Essential" },
   { items: [ACADEMIC_TOPIC_NAME, FIX_MISTAKES], colorOf: ACADEMIC_TOPIC_NAME },
 ];
 
-/** A square topic button: icon on top, then the name one word per line, centered. */
-function SquareTile({
+/** Every button on this screen is this tall — just enough for the icon and a two-line name,
+ *  so the whole menu fits on one phone screen. */
+const TILE_HEIGHT = "h-24";
+
+/** A topic button, two to a row: icon on top, then the name one word per line, centered.
+ *  `count` is shown in brackets after the name, e.g. "Mistakes (3)". */
+function TopicTile({
   href,
   icon,
   name,
-  subtitle,
+  count,
   bg,
   accent,
 }: {
   href: string;
   icon: string;
   name: string;
-  subtitle?: string;
+  count?: number;
   bg: string;
   accent: string;
 }) {
+  const words = name.split(" ");
   return (
     <Link href={href}>
       <div
-        className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl p-3 text-center transition-transform hover:scale-[1.02]"
+        className={`flex ${TILE_HEIGHT} flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1 text-center transition-transform hover:scale-[1.02]`}
         style={{ background: bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
       >
         <div className="text-4xl leading-none">{icon}</div>
         <div className="text-lg font-bold leading-tight" style={{ color: accent }}>
-          {name.split(" ").map((word) => (
-            <div key={word}>{word}</div>
+          {words.map((word, i) => (
+            <div key={word}>
+              {word}
+              {count !== undefined && i === words.length - 1 && ` (${count})`}
+            </div>
           ))}
         </div>
-        {subtitle && (
-          <div className="text-xs opacity-70" style={{ color: accent }}>
-            {subtitle}
-          </div>
-        )}
       </div>
     </Link>
   );
@@ -222,7 +226,7 @@ function WideTile({
   return (
     <Link href={href}>
       <div
-        className="rounded-2xl p-5 text-center transition-transform hover:scale-[1.01]"
+        className={`flex ${TILE_HEIGHT} flex-col items-center justify-center rounded-2xl px-5 text-center transition-transform hover:scale-[1.01]`}
         style={{ background: bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
       >
         <div className="text-2xl font-bold" style={{ color: accent }}>
