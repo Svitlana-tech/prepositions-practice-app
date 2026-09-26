@@ -116,8 +116,11 @@ const STYLE = `
 }
 `;
 
-/** How long a wrong answer's red reaction plays before the right card is lit up. */
-const REVEAL_DELAY_MS = 500;
+/** How long the wrong-answer face stays on screen. */
+const WRONG_FACE_MS = 2000;
+/** In tests, the right card lights up only once the face is fully gone, after a short pause —
+ *  both at once looked muddled. */
+const REVEAL_DELAY_MS = WRONG_FACE_MS + 500;
 
 type ExplanationSentence = { text: string; isExample: boolean };
 type ExplanationBlock = { phrase: string | null; sentences: ExplanationSentence[] };
@@ -191,7 +194,7 @@ function useCardLayout(options: string[]) {
  * Two interaction contracts, chosen by `standalone`:
  * - false (default): a tap just reports the selection via onChange, like every other
  *   question type — correctness is revealed once by an externally-driven checkResult.
- *   A wrong answer gets its red reaction, then (REVEAL_DELAY_MS later) the right card lights
+ *   A wrong answer gets its red reaction, then (once it's gone, REVEAL_DELAY_MS) the right card lights
  *   up and fills the gap the same way a correct answer does. The explanation is only shown,
  *   in place of the cards, while the session sets `showExplanation`.
  *   Used by the normal dispatcher (bounded practice sessions, teacher preview).
@@ -289,7 +292,7 @@ export function PrepositionCardsQuestion({
     void overlay.offsetWidth;
     overlay.classList.add("show");
     lottieAnimRef.current?.goToAndPlay(0, true);
-    window.setTimeout(() => overlay.classList.remove("show"), 2000);
+    window.setTimeout(() => overlay.classList.remove("show"), WRONG_FACE_MS);
   }
 
   function playRipple(word: string) {
