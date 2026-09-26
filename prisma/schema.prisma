@@ -58,8 +58,8 @@ model Task {
   /// but still gradeable/fetchable by id so the test it belongs to keeps working.
   inBank       Boolean   @default(true)
   payload      Json
-  /// Short, per-task explanation shown inline. Ignored (in favor of
-  /// explanationEntry's text) whenever explanationEntryId is set.
+  /// Short, per-task explanation: the explanation on the first line, an example sentence on
+  /// the next. When explanationEntryId is also set, it is shown first, then the rule.
   explanation  String?
   /// Links to a reusable rule in the explanation bank — when set, the student side
   /// shows a "Read full explanation" link/expand (instead of `explanation` inline)

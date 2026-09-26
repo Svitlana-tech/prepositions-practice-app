@@ -45,9 +45,10 @@ export async function POST(request: NextRequest) {
     maxScore: result.maxScore,
     perGapResults: result.perGapResults,
     reveal: revealFor(type, task.payload),
-    // A rule linked from the explanation bank takes priority over the task's own short
-    // explanation — see ExplanationEntry in schema.prisma for why.
-    explanation: task.explanationEntry ? task.explanationEntry.text : task.explanation,
+    // The task's own explanation comes first; a rule linked from the explanation bank
+    // follows it as its own paragraph(s) — see ExplanationEntry in schema.prisma.
+    explanation:
+      [task.explanation, task.explanationEntry?.text].filter(Boolean).join("\n\n") || null,
     explanationIsLong: !!task.explanationEntry,
   });
 }

@@ -425,7 +425,7 @@ export function FillInBlankForm({
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            Explanation (optional) — why this is the correct answer
+            Explanation (optional) — why this is the correct answer; an example sentence on the next line
           </label>
           <Textarea
             rows={2}
@@ -451,10 +451,10 @@ export function FillInBlankForm({
                   }}
                 />
                 <span>
-                  <span className="font-medium">Use a reusable rule instead (a rule, not a one-liner)</span>
+                  <span className="font-medium">Also link a reusable rule (shown after the explanation)</span>
                   <span className="block text-gray-500">
-                    Instead of showing text directly, the student sees a &quot;Read full
-                    explanation&quot; link that opens it — use this when a short line can&apos;t
+                    The student sees it after this sentence&apos;s own explanation (if any) — use
+                    this when a short line can&apos;t
                     capture the distinction (e.g. &quot;connect to&quot; vs &quot;connect
                     with&quot;, or &quot;agree with/on/to&quot;). Pick a rule already written for
                     another sentence, or write a new one — either way, editing it later updates

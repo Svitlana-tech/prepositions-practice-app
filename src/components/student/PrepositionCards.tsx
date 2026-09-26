@@ -148,16 +148,27 @@ function splitSentences(text: string): string[] {
     .filter(Boolean);
 }
 
-/** Rule-bank entries write each preposition variant as "Phrase - explanation. Example.",
- *  one per line. The leading phrase (before the first " - ") gets highlighted, and any
- *  trailing sentence that reuses the phrase's headword is treated as the example. */
-function parseExplanationBlock(paragraph: string): ExplanationBlock {
-  const dashIdx = paragraph.indexOf(" - ");
+/** Rule-bank entries write each preposition variant as its own paragraph (blank line
+ *  between them): "Phrase - explanation.", then the example on the next line. The leading
+ *  phrase (before the first " - ") gets highlighted and the example lines are italic.
+ *  Older one-line paragraphs ("Phrase - explanation. Example.") have no example line — there
+ *  any trailing sentence that reuses the phrase's headword is treated as the example.
+ *  A task's own explanation uses the same two-line shape, without the phrase. */
+function parseExplanationBlock(paragraph: string, detectPhrase: boolean): ExplanationBlock {
+  const [first, ...exampleLines] = paragraph
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const examples = exampleLines.map((text) => ({ text, isExample: true }));
+  const dashIdx = detectPhrase ? first.indexOf(" - ") : -1;
   if (dashIdx === -1) {
-    return { phrase: null, sentences: [{ text: paragraph, isExample: false }] };
+    return { phrase: null, sentences: [{ text: first, isExample: false }, ...examples] };
   }
-  const phrase = paragraph.slice(0, dashIdx).trim();
-  const rest = paragraph.slice(dashIdx + 3).trim();
+  const phrase = first.slice(0, dashIdx).trim();
+  const rest = first.slice(dashIdx + 3).trim();
+  if (examples.length > 0) {
+    return { phrase, sentences: [{ text: rest, isExample: false }, ...examples] };
+  }
   const keywords = keywordsFromPhrase(phrase);
   const sentences = splitSentences(rest).map((text, i) => ({
     text,
@@ -166,12 +177,14 @@ function parseExplanationBlock(paragraph: string): ExplanationBlock {
   return { phrase, sentences };
 }
 
-function parseExplanationText(text: string): ExplanationBlock[] {
+/** `isRule` = the text includes a rule-bank entry, whose paragraphs may start with a
+ *  highlighted "Phrase - ". A task's own explanation (always the first paragraph) never does. */
+function parseExplanationText(text: string, isRule: boolean): ExplanationBlock[] {
   return text
-    .split(/\n+/)
+    .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean)
-    .map(parseExplanationBlock);
+    .map((p) => parseExplanationBlock(p, isRule));
 }
 
 function useCardLayout(options: string[]) {
@@ -378,15 +391,8 @@ export function PrepositionCardsQuestion({
 
   const shownExplanation = standalone ? explanation : nonStandaloneResult?.explanation ?? null;
   const shownExplanationIsLong = standalone ? explanationIsLong : !!nonStandaloneResult?.explanationIsLong;
-  // Only rule-bank text follows the "Phrase - explanation. Example." format; a task's own
-  // short explanation is shown as one plain paragraph.
   const explanationBlocks = useMemo(
-    () =>
-      !shownExplanation
-        ? []
-        : shownExplanationIsLong
-          ? parseExplanationText(shownExplanation)
-          : [{ phrase: null, sentences: [{ text: shownExplanation, isExample: false }] }],
+    () => (shownExplanation ? parseExplanationText(shownExplanation, shownExplanationIsLong) : []),
     [shownExplanation, shownExplanationIsLong]
   );
   const explanationOpen = standalone ? showFullExplanation : showExplanation && !!shownExplanation;

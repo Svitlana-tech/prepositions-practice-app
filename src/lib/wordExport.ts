@@ -63,12 +63,15 @@ function taskParagraphs(task: ExportTask, number: number): Paragraph[] {
       ],
     }),
   ];
-  const note = task.explanationEntry ? `Rule: ${task.explanationEntry.label}` : task.explanation;
-  if (note) {
+  const notes = [
+    ...(task.explanation ?? "").split("\n").filter((l) => l.trim()),
+    ...(task.explanationEntry ? [`Rule: ${task.explanationEntry.label}`] : []),
+  ];
+  for (const note of notes) {
     paragraphs.push(
       new Paragraph({
         indent: { left: 360 },
-        children: [new TextRun({ text: note, italics: true, color: NOTE_COLOR, size: 20 })],
+        children: [new TextRun({ text: note.trim(), italics: true, color: NOTE_COLOR, size: 20 })],
       })
     );
   }
