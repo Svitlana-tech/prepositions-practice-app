@@ -54,3 +54,6 @@ screens.pptx
 ~$screens.pptx
 texts.docx
 ~$texts.docx
+
+# Local content backups (copies of DB text before bulk edits)
+/backups
