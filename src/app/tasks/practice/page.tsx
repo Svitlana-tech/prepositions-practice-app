@@ -10,7 +10,8 @@ import { isTaskType } from "@/lib/taskTypes";
  * A session is always scoped to one question type (`?type=`); `?topic=` narrows it
  * to a single topic of that type, and leaving it out mixes all of the type's questions
  * — scoped to `?section=` (the section the student came from) when a topic isn't given,
- * so "mixed" doesn't reach outside the section they picked.
+ * so "mixed" doesn't reach outside the section they picked. `?group=` mixes just the
+ * topics of one TOPIC_GROUPS entry (e.g. Everyday Prepositions).
  */
 function PracticeScreen() {
   const searchParams = useSearchParams();
@@ -22,6 +23,7 @@ function PracticeScreen() {
   const typeParam = searchParams.get("type");
   const topicParam = searchParams.get("topic");
   const sectionParam = searchParams.get("section");
+  const groupParam = searchParams.get("group");
 
   useEffect(() => {
     const name = getStoredStudentName();
@@ -43,6 +45,7 @@ function PracticeScreen() {
           key={round}
           taskType={typeParam}
           categoryId={topicParam}
+          group={groupParam}
           sectionId={sectionParam}
           onRepeat={() => setRound((r) => r + 1)}
         />

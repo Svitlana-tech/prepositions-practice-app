@@ -23,6 +23,7 @@ const NEXT_THEME = getCategoryTheme("Essential");
 export function PracticeSession({
   taskType = null,
   categoryId = null,
+  group = null,
   sectionId = null,
   presetTaskIds = null,
   onRepeat,
@@ -30,6 +31,8 @@ export function PracticeSession({
   taskType?: TaskType | null;
   /** A single topic of that type, or null for "all topics of this type mixed". */
   categoryId?: string | null;
+  /** A TOPIC_GROUPS key: several topics practiced together (no mistakes mixed in). */
+  group?: string | null;
   /** The section this session was started from — keeps "mixed" (no categoryId) scoped
    *  to that section's topics instead of every topic of the type app-wide. */
   sectionId?: string | null;
@@ -73,8 +76,9 @@ export function PracticeSession({
       body: JSON.stringify({
         taskType,
         categoryId,
+        group,
         sectionId,
-        mistakeTaskIds: categoryId ? [] : getMistakeIds(),
+        mistakeTaskIds: categoryId || group ? [] : getMistakeIds(),
         seenTaskIds: getSeenIds(),
       }),
     })
@@ -91,7 +95,7 @@ export function PracticeSession({
         setTaskIds(data.taskIds);
       })
       .catch((e) => setError(e.message));
-  }, [taskType, categoryId, sectionId, presetTaskIds]);
+  }, [taskType, categoryId, group, sectionId, presetTaskIds]);
 
   useEffect(() => {
     if (!taskIds || index >= taskIds.length) return;

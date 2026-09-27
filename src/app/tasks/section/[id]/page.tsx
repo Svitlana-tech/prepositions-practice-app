@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { clearStoredStudentName, getStoredStudentName } from "@/lib/studentName";
 import { FIX_MISTAKES_THEME, getCategoryTheme } from "@/lib/categoryTheme";
-import { ACADEMIC_TOPIC_NAME, FREE_FLOW_TOPIC_NAMES } from "@/lib/topics";
+import { ACADEMIC_TOPIC_NAME, FREE_FLOW_TOPIC_NAMES, TOPIC_GROUPS } from "@/lib/topics";
 import { getMistakeIds } from "@/lib/mistakes";
 
 type TopicSummary = { id: string; name: string; count: number };
@@ -81,75 +81,70 @@ export default function SectionPage() {
         const byName = new Map(t.topics.map((topic) => [topic.name, topic]));
         const hrefFor = (topic: TopicSummary) =>
           `/tasks/practice?type=${t.type}&topic=${topic.id}&section=${params.id}`;
-        const placed = new Set(GRID_ROWS.flatMap((row) => row.items));
-        // Topics added later that the layout doesn't know yet still get a tile, at the end.
-        const extras = t.topics.filter((topic) => !placed.has(topic.name));
+        const everyday = TOPIC_GROUPS[EVERYDAY_GROUP];
+        const everydayTheme = getCategoryTheme("Essential");
+        const hasEveryday = everyday.topics.some((name) => byName.has(name));
+        const phrasal = byName.get("Phrasal Verbs");
+        const academic = byName.get(ACADEMIC_TOPIC_NAME);
         const freeFlowTheme = getCategoryTheme(FREE_FLOW_TOPIC_NAMES[0]);
-
-        const tiles = [
-          ...GRID_ROWS.flatMap((row) => {
-            const theme = getCategoryTheme(row.colorOf);
-            return row.items.map((item) => {
-              if (item === FIX_MISTAKES) {
-                return (
-                  <TopicTile
-                    key={item}
-                    href="/tasks/mistakes"
-                    icon={FIX_MISTAKES_THEME.icon}
-                    name="Fix Mistakes"
-                    count={mistakeCount || undefined}
-                    bg={theme.bg}
-                    accent={theme.accent}
-                  />
-                );
-              }
-              const topic = byName.get(item);
-              if (!topic) return null;
-              return (
-                <TopicTile
-                  key={topic.id}
-                  href={hrefFor(topic)}
-                  icon={getCategoryTheme(topic.name).icon}
-                  name={topic.name}
-                  bg={theme.bg}
-                  accent={theme.accent}
-                />
-              );
-            });
-          }),
-          ...extras.map((topic) => {
-            const theme = getCategoryTheme(topic.name);
-            return (
-              <TopicTile
-                key={topic.id}
-                href={hrefFor(topic)}
-                icon={theme.icon}
-                name={topic.name}
-                bg={theme.bg}
-                accent={theme.accent}
-              />
-            );
-          }),
-        ];
+        const placed = new Set([...everyday.topics, "Phrasal Verbs", ACADEMIC_TOPIC_NAME]);
+        // Topics added later that the layout doesn't know yet still get a tile, after Academic.
+        const extras = t.topics.filter((topic) => !placed.has(topic.name));
 
         return (
-          <div key={t.type} className="mb-8 flex flex-col">
-            <div className="grid grid-cols-2 gap-3">{tiles}</div>
+          <div key={t.type} className="mb-8 flex flex-col gap-6">
+            <WideTile
+              href={`/tasks/practice?type=${t.type}&section=${params.id}`}
+              title="⚡ Daily Mix"
+              subtitle="10 random cards for today's drill"
+              bg={FIX_MISTAKES_THEME.bg}
+              accent={FIX_MISTAKES_THEME.accent}
+            />
 
-            <div className="mt-6 flex flex-col gap-3">
-              <WideTile
-                href={`/tasks/practice?type=${t.type}&section=${params.id}`}
-                title="⚡ Daily Mix"
-                subtitle="10 random cards"
-                bg={FIX_MISTAKES_THEME.bg}
-                accent={FIX_MISTAKES_THEME.accent}
+            <div className="grid grid-cols-2 gap-3">
+              {hasEveryday && (
+                <TopicTile
+                  href={`/tasks/practice?type=${t.type}&group=${EVERYDAY_GROUP}&section=${params.id}`}
+                  icon={everydayTheme.icon}
+                  name={everyday.name}
+                  height={TALL_TILE_HEIGHT}
+                  bg={everydayTheme.bg}
+                  accent={everydayTheme.accent}
+                />
+              )}
+              {phrasal && (
+                <TopicTile
+                  href={hrefFor(phrasal)}
+                  icon={getCategoryTheme(phrasal.name).icon}
+                  name={phrasal.name}
+                  height={TALL_TILE_HEIGHT}
+                  bg={everydayTheme.bg}
+                  accent={everydayTheme.accent}
+                />
+              )}
+              {academic && (
+                <TopicTile
+                  href={hrefFor(academic)}
+                  name={academic.name}
+                  wide
+                  {...getCategoryTheme(academic.name)}
+                />
+              )}
+              {extras.map((topic) => (
+                <TopicTile key={topic.id} href={hrefFor(topic)} name={topic.name} {...getCategoryTheme(topic.name)} />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <TopicTile
+                href="/tasks/mistakes"
+                icon={FIX_MISTAKES_THEME.icon}
+                name="Fix Mistakes"
+                count={mistakeCount || undefined}
+                bg={getCategoryTheme(ACADEMIC_TOPIC_NAME).bg}
+                accent={getCategoryTheme(ACADEMIC_TOPIC_NAME).accent}
               />
-              <WideTile
-                href="/tasks/free-flow"
-                title={`${freeFlowTheme.icon} Free Flow`}
-                bg={freeFlowTheme.bg}
-                accent={freeFlowTheme.accent}
-              />
+              <TopicTile href="/tasks/free-flow" name={FREE_FLOW_TOPIC_NAMES[0]} {...freeFlowTheme} />
             </div>
           </div>
         );
@@ -158,26 +153,25 @@ export default function SectionPage() {
   );
 }
 
-const FIX_MISTAKES = "Fix Mistakes";
+/** The TOPIC_GROUPS key behind the Everyday Prepositions button. */
+const EVERYDAY_GROUP = "everyday";
 
-/** The 2-column topic grid, row by row; each row is painted in one topic's colors. */
-const GRID_ROWS = [
-  { items: ["Dependent", "Essential"], colorOf: "Dependent" },
-  { items: ["Fixed Expressions", "Phrasal Verbs"], colorOf: "Essential" },
-  { items: [ACADEMIC_TOPIC_NAME, FIX_MISTAKES], colorOf: ACADEMIC_TOPIC_NAME },
-];
-
-/** Every button on this screen is this tall — just enough for the icon and a two-line name,
- *  so the whole menu fits on one phone screen. */
+/** Most buttons on this screen are this tall — just enough for the icon and a two-line
+ *  name, so the whole menu fits on one phone screen. */
 const TILE_HEIGHT = "h-24";
+/** Everyday Prepositions and Phrasal Verbs stand out a little taller. */
+const TALL_TILE_HEIGHT = "h-28";
 
 /** A topic button, two to a row: icon on top, then the name one word per line, centered.
- *  `count` is shown in brackets after the name, e.g. "Mistakes (3)". */
+ *  `wide` spans both columns with the name on one line. `count` is shown in brackets
+ *  after the name, e.g. "Mistakes (3)". */
 function TopicTile({
   href,
   icon,
   name,
   count,
+  wide = false,
+  height = TILE_HEIGHT,
   bg,
   accent,
 }: {
@@ -185,14 +179,16 @@ function TopicTile({
   icon: string;
   name: string;
   count?: number;
+  wide?: boolean;
+  height?: string;
   bg: string;
   accent: string;
 }) {
-  const words = name.split(" ");
+  const words = wide ? [name] : name.split(" ");
   return (
-    <Link href={href}>
+    <Link href={href} className={wide ? "col-span-2" : undefined}>
       <div
-        className={`flex ${TILE_HEIGHT} flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1 text-center transition-transform hover:scale-[1.02]`}
+        className={`flex ${height} flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1 text-center transition-transform hover:scale-[1.02]`}
         style={{ background: bg, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
       >
         <div className="text-4xl leading-none">{icon}</div>
@@ -209,7 +205,7 @@ function TopicTile({
   );
 }
 
-/** A full-width button below the grid: centered, larger title. */
+/** A full-width button (Daily Mix): centered, larger title. */
 function WideTile({
   href,
   title,

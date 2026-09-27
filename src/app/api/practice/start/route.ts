@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isTaskType } from "@/lib/taskTypes";
 import { shuffle } from "@/lib/shuffle";
-import { ACADEMIC_TOPIC_NAME, FREE_FLOW_TOPIC_NAMES } from "@/lib/topics";
+import { ACADEMIC_TOPIC_NAME, FREE_FLOW_TOPIC_NAMES, TOPIC_GROUPS } from "@/lib/topics";
 
 const SESSION_SIZE = 10;
 
@@ -18,6 +18,8 @@ const MIX_EXCLUDED_TOPIC_NAMES = [ACADEMIC_TOPIC_NAME, ...FREE_FLOW_TOPIC_NAMES]
  * 10 random questions spread evenly over the topics (scoped to `sectionId` when
  * given, minus MIX_EXCLUDED_TOPIC_NAMES), plus up to MIX_MISTAKES ids picked from
  * `mistakeTaskIds` — the student's Fix Mistakes pool, which only lives in their browser.
+ * With `group` (a TOPIC_GROUPS key) it's 10 questions spread evenly over that group's
+ * topics, dealt like the mix but without mistakes.
  *
  * No repeats until a topic runs out: `seenTaskIds` (also browser-only) is what this
  * student has already been shown, and unseen tasks are always drawn first. When a
@@ -31,6 +33,7 @@ export async function POST(request: NextRequest) {
   const taskType = body?.taskType;
   const categoryId = typeof body?.categoryId === "string" && body.categoryId ? body.categoryId : null;
   const sectionId = typeof body?.sectionId === "string" && body.sectionId ? body.sectionId : null;
+  const group = typeof body?.group === "string" ? TOPIC_GROUPS[body.group] ?? null : null;
   const mistakeTaskIds: string[] = Array.isArray(body?.mistakeTaskIds)
     ? body.mistakeTaskIds.filter((id: unknown): id is string => typeof id === "string").slice(0, 500)
     : [];
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
         ? { categoryId }
         : {
             category: {
-              name: { notIn: MIX_EXCLUDED_TOPIC_NAMES },
+              name: group ? { in: group.topics } : { notIn: MIX_EXCLUDED_TOPIC_NAMES },
               ...(sectionId ? { sectionId } : {}),
             },
           }),
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
 
   // Mistakes can come from any topic, excluded ones included — only still-published
   // tasks of this type (and section) not already drawn above.
-  const candidates = mistakeTaskIds.filter((id) => !picked.includes(id));
+  const candidates = group ? [] : mistakeTaskIds.filter((id) => !picked.includes(id));
   const eligible = candidates.length
     ? await prisma.task.findMany({
         where: {

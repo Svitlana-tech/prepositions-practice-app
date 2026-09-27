@@ -19,3 +19,9 @@ export function isFreeFlowTopic(name: string): boolean {
 export function freeFlowWeight(name: string): number {
   return name === ACADEMIC_TOPIC_NAME ? 0.5 : 1;
 }
+
+/** Menu buttons that practice several topics together (the topics themselves stay
+ *  separate in the database). Keyed by the `?group=` value in the practice URL. */
+export const TOPIC_GROUPS: Record<string, { name: string; topics: string[] }> = {
+  everyday: { name: "Everyday Prepositions", topics: ["Essential", "Dependent", "Fixed Expressions"] },
+};
