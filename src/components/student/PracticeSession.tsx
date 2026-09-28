@@ -19,6 +19,8 @@ import {
 // Dependent tile (green), Next like the Phrasal Verbs tile (painted in Essential's blue).
 const EXPLANATION_THEME = getCategoryTheme("Dependent");
 const NEXT_THEME = getCategoryTheme("Essential");
+/** Room kept free under the Next button for a phone browser's floating toolbar. */
+const TOOLBAR_ROOM_PX = 96;
 
 export function PracticeSession({
   taskType = null,
@@ -50,7 +52,6 @@ export function PracticeSession({
   const [currentAnswers, setCurrentAnswers] = useState<CurrentAnswers>({});
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [finished, setFinished] = useState(false);
   const nextRef = useRef<HTMLDivElement>(null);
@@ -137,16 +138,20 @@ export function PracticeSession({
     }
   }, [finished, records]);
 
-  // After Check, scroll the Next button into view with room to spare below it (its
-  // scroll-mb) — at the very bottom it can end up under a phone browser's floating
-  // toolbar (e.g. Telegram's in-app browser).
+  // The screen stays still after Check: the buttons' space is reserved from the start, so
+  // Next shows up where the student is already looking. Only if it would land under a
+  // phone browser's floating toolbar (e.g. Telegram's in-app browser) — a short screen —
+  // is it scrolled into view, with room to spare below it (its scroll-mb).
   useEffect(() => {
     if (!checkResult) return;
     // Next frame: the layout is still settling (Check button swapped for the feedback)
     // and a scroll started mid-change gets dropped.
-    const frame = requestAnimationFrame(() =>
-      nextRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
-    );
+    const frame = requestAnimationFrame(() => {
+      const el = nextRef.current;
+      if (el && el.getBoundingClientRect().bottom > window.innerHeight - TOOLBAR_ROOM_PX) {
+        el.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    });
     return () => cancelAnimationFrame(frame);
   }, [checkResult]);
 
@@ -166,7 +171,6 @@ export function PracticeSession({
     const correct = result.score === result.maxScore;
     setCheckResult(result);
     recordFirstTry(taskId, correct);
-    if (correct) setCorrectCount((c) => c + 1);
     if (payload) {
       const gapId = payload.gaps[0]?.id ?? "gap1";
       setRecords((prev) => [
@@ -212,10 +216,6 @@ export function PracticeSession({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="text-sm text-gray-500">
-        Question {index + 1} of {taskIds.length} · correct: {correctCount}
-      </div>
-
       <FillInBlankQuestion
         payload={payload}
         answers={currentAnswers}
@@ -225,26 +225,30 @@ export function PracticeSession({
         showExplanation={showExplanation}
       />
 
-      {!checkResult && (
-        <Button onClick={handleCheck} disabled={!allGapsFilled}>
-          Check
-        </Button>
-      )}
+      {/* Always as tall as the Explanation + Next pair, so swapping Check for them
+          doesn't grow the page and nothing below the sentence moves. */}
+      <div className="flex min-h-[108px] flex-col gap-3">
+        {!checkResult && (
+          <Button onClick={handleCheck} disabled={!allGapsFilled}>
+            Check
+          </Button>
+        )}
 
-      {/* Right or wrong, the answer shows in the sentence itself; the explanation opens
-          only on request, and Next skips straight to the following question. */}
-      {checkResult && (
-        <div ref={nextRef} className="flex scroll-mb-32 flex-col gap-3">
-          {checkResult.explanation && (
-            <SlimButton theme={EXPLANATION_THEME} onClick={() => setShowExplanation((open) => !open)}>
-              {showExplanation ? "Hide explanation" : "Explanation"}
+        {/* Right or wrong, the answer shows in the sentence itself; the explanation opens
+            only on request, and Next skips straight to the following question. */}
+        {checkResult && (
+          <div ref={nextRef} className="flex scroll-mb-32 flex-col gap-3">
+            {checkResult.explanation && (
+              <SlimButton theme={EXPLANATION_THEME} onClick={() => setShowExplanation((open) => !open)}>
+                {showExplanation ? "Hide explanation" : "Explanation"}
+              </SlimButton>
+            )}
+            <SlimButton theme={NEXT_THEME} onClick={handleNext}>
+              {index + 1 < taskIds.length ? "Next →" : "Finish"}
             </SlimButton>
-          )}
-          <SlimButton theme={NEXT_THEME} onClick={handleNext}>
-            {index + 1 < taskIds.length ? "Next →" : "Finish"}
-          </SlimButton>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
