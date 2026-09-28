@@ -116,8 +116,7 @@ const STYLE = `
 /* Examples read like a teacher's handwritten note in blue ink. */
 .prep-cards .explanation-example {
   font-family: var(--font-handwriting), "Segoe Print", "Comic Sans MS", cursive;
-  font-size: 1.3em;
-  line-height: 1.25;
+  font-size: 1.12em;
   color: #1E4FA8;
 }
 .prep-cards .explanation-example.own-line {

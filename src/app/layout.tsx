@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Caveat, Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Patrick_Hand } from "next/font/google";
 import "./globals.css";
 import { RegisterServiceWorker } from "./register-sw";
 
@@ -13,10 +13,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/** Handwriting face for the example sentences in explanations. */
-const handwriting = Caveat({
+/** Neat hand-printed face for the example sentences in explanations (her pick over the
+ *  more cursive Caveat, which was hard to read next to the explanation text). */
+const handwriting = Patrick_Hand({
   variable: "--font-handwriting",
   subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
