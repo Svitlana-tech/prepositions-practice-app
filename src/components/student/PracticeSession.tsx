@@ -216,6 +216,17 @@ export function PracticeSession({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* One segment per question; a segment fills in once its question is answered. */}
+      <div className="flex gap-1" aria-label={`Answered ${records.length} of ${taskIds.length}`}>
+        {taskIds.map((id, i) => (
+          <div
+            key={id}
+            className="h-1.5 flex-1 rounded-full transition-colors duration-300"
+            style={{ background: i < records.length ? NEXT_THEME.accent : NEXT_THEME.bg }}
+          />
+        ))}
+      </div>
+
       <FillInBlankQuestion
         payload={payload}
         answers={currentAnswers}
@@ -226,8 +237,9 @@ export function PracticeSession({
       />
 
       {/* Always as tall as the Explanation + Next pair, so swapping Check for them
-          doesn't grow the page and nothing below the sentence moves. */}
-      <div className="flex min-h-[108px] flex-col gap-3">
+          doesn't grow the page and nothing below the sentence moves. Its extra top margin
+          makes the gap above it match the one between the sentence and the cards. */}
+      <div className="mt-6 flex min-h-[108px] flex-col gap-3">
         {!checkResult && (
           <Button onClick={handleCheck} disabled={!allGapsFilled}>
             Check
