@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { Spinner } from "@/components/ui/Spinner";
 import { getCategoryTheme } from "@/lib/categoryTheme";
 import type { TaskType } from "@/lib/taskSchemas";
 import { getMistakeIds, recordFirstTry, removeMistake } from "@/lib/mistakes";
@@ -51,8 +52,11 @@ export function PracticeSession({
   const [taskIds, setTaskIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
-  const [payload, setPayload] = useState<Payload | null>(null);
-  const [instructions, setInstructions] = useState<string | null>(null);
+  const [loadedTasks, setLoadedTasks] = useState<
+    Record<string, { payload: Payload; instructions: string | null }>
+  >({});
+  const requestedRef = useRef<Set<string>>(new Set());
+  const [retryTick, setRetryTick] = useState(0);
   const [currentAnswers, setCurrentAnswers] = useState<CurrentAnswers>({});
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -102,27 +106,35 @@ export function PracticeSession({
       .catch((e) => setError(e.message));
   }, [taskType, categoryId, group, sectionId, presetTaskIds]);
 
+  // All of the session's questions load at once, as soon as the set is known, so moving
+  // to the next question never waits on the network. A failed request is retried a
+  // couple of seconds later (a phone briefly offline).
   useEffect(() => {
-    if (!taskIds || index >= taskIds.length) return;
-    setPayload(null);
-    setInstructions(null);
-    setCurrentAnswers({});
-    setCheckResult(null);
-    setShowExplanation(false);
-    const taskId = taskIds[index];
-    fetch(`/api/tasks/${taskId}`)
-      .then(async (res) => {
-        if (res.status === 404) {
-          // Deleted/unpublished since it was saved as a mistake — drop it and move on.
-          removeMistake(taskId);
-          setTaskIds((ids) => ids?.filter((id) => id !== taskId) ?? null);
-          return;
-        }
-        const data = await res.json();
-        setPayload(data.payload);
-        setInstructions(data.instructions ?? null);
-      });
-  }, [taskIds, index]);
+    if (!taskIds) return;
+    for (const taskId of taskIds) {
+      if (requestedRef.current.has(taskId)) continue;
+      requestedRef.current.add(taskId);
+      fetch(`/api/tasks/${taskId}`)
+        .then(async (res) => {
+          if (res.status === 404) {
+            // Deleted/unpublished since it was saved as a mistake — drop it and move on.
+            removeMistake(taskId);
+            setTaskIds((ids) => ids?.filter((id) => id !== taskId) ?? null);
+            return;
+          }
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          setLoadedTasks((loaded) => ({
+            ...loaded,
+            [taskId]: { payload: data.payload, instructions: data.instructions ?? null },
+          }));
+        })
+        .catch(() => {
+          requestedRef.current.delete(taskId);
+          window.setTimeout(() => setRetryTick((t) => t + 1), 2000);
+        });
+    }
+  }, [taskIds, retryTick]);
 
   // Only reachable when dropped tasks (above) shrink the list past the current position.
   useEffect(() => {
@@ -159,6 +171,10 @@ export function PracticeSession({
     return () => cancelAnimationFrame(frame);
   }, [checkResult]);
 
+  const current = taskIds && index < taskIds.length ? loadedTasks[taskIds[index]] : undefined;
+  const payload = current?.payload ?? null;
+  const instructions = current?.instructions ?? null;
+
   const allGapsFilled =
     payload !== null &&
     payload.gaps.every((g) => currentAnswers[g.id] !== undefined && currentAnswers[g.id] !== "");
@@ -193,6 +209,9 @@ export function PracticeSession({
   function handleNext() {
     if (!taskIds) return;
     if (index + 1 < taskIds.length) {
+      setCurrentAnswers({});
+      setCheckResult(null);
+      setShowExplanation(false);
       setIndex(index + 1);
       return;
     }
@@ -215,7 +234,7 @@ export function PracticeSession({
   }
 
   if (!taskIds || !payload) {
-    return <p className="text-gray-500">Loading...</p>;
+    return <Spinner />;
   }
 
   return (

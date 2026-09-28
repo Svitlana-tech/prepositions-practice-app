@@ -42,7 +42,9 @@ function PracticeScreen() {
     <div className="mx-auto max-w-2xl px-6 pt-6 pb-40 md:max-w-3xl lg:max-w-4xl">
       {isTaskType(typeParam) ? (
         <PracticeSession
-          key={round}
+          // A different menu button (other topic/group) always starts a brand-new session,
+          // even if the browser keeps this page alive between the two.
+          key={`${round}|${typeParam}|${topicParam}|${groupParam}|${sectionParam}`}
           taskType={typeParam}
           categoryId={topicParam}
           group={groupParam}

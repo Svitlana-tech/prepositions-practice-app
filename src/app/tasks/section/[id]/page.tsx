@@ -7,6 +7,7 @@ import { clearStoredStudentName, getStoredStudentName } from "@/lib/studentName"
 import { FIX_MISTAKES_THEME, getCategoryTheme } from "@/lib/categoryTheme";
 import { ACADEMIC_TOPIC_NAME, TOPIC_GROUPS } from "@/lib/topics";
 import { getMistakeIds } from "@/lib/mistakes";
+import { Spinner } from "@/components/ui/Spinner";
 
 type TopicSummary = { id: string; name: string; count: number };
 
@@ -75,7 +76,7 @@ export default function SectionPage() {
         </button>
       </div>
 
-      {loading && <p className="px-1 text-gray-500">Loading...</p>}
+      {loading && <Spinner />}
       {isEmpty && <p className="px-1 text-gray-500">Nothing here yet — check back later.</p>}
 
       {types.map((t) => {
