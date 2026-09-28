@@ -36,9 +36,11 @@ const STYLE = `
 }
 .prep-cards .blank.pop { animation: prepCardsPop 0.35s ease; }
 
+/* Always three to a row: on a narrow phone the cards shrink a little instead of
+   wrapping to two per row, which would push the buttons below the screen. */
 .prep-cards .options {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 92px));
   justify-content: center;
   align-items: center;
   gap: 22px 16px;
@@ -50,7 +52,7 @@ const STYLE = `
 .prep-cards .card-wrap { position: relative; }
 .prep-cards .option {
   --tilt: 0deg;
-  width: 92px;
+  width: 100%;
   height: 58px;
   border-radius: 14px;
   background: var(--card-bg);
@@ -399,7 +401,10 @@ export function PrepositionCardsQuestion({
 
   return (
     <div
-      className="prep-cards flex flex-col gap-12"
+      // In a test, the sentence→cards gap follows the session's --question-gap (it shrinks
+      // a little on short screens); Free Flow keeps its fixed gap.
+      className={`prep-cards flex flex-col ${standalone ? "gap-12" : ""}`}
+      style={standalone ? undefined : { gap: "var(--question-gap, 48px)" }}
       onPointerDown={handleSwipeStart}
       onPointerUp={handleSwipeEnd}
     >

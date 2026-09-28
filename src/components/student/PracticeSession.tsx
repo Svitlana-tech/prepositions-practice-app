@@ -21,6 +21,10 @@ const EXPLANATION_THEME = getCategoryTheme("Dependent");
 const NEXT_THEME = getCategoryTheme("Essential");
 /** Room kept free under the Next button for a phone browser's floating toolbar. */
 const TOOLBAR_ROOM_PX = 96;
+/** Space between the sentence and the cards, and between the cards and the buttons:
+ *  48px on a tall phone screen, down to 24px on a short one, so the whole question fits
+ *  without scrolling on as many phones as possible. */
+const QUESTION_GAP = "clamp(24px, 7dvh - 8px, 48px)";
 
 export function PracticeSession({
   taskType = null,
@@ -215,14 +219,17 @@ export function PracticeSession({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* One segment per question; a segment fills in once its question is answered. */}
+    <div className="flex flex-col gap-6" style={{ "--question-gap": QUESTION_GAP } as React.CSSProperties}>
+      {/* One segment per question; once answered it turns green (right) or red (wrong),
+          the same colors as the cards. */}
       <div className="flex gap-1" aria-label={`Answered ${records.length} of ${taskIds.length}`}>
         {taskIds.map((id, i) => (
           <div
             key={id}
             className="h-1.5 flex-1 rounded-full transition-colors duration-300"
-            style={{ background: i < records.length ? NEXT_THEME.accent : NEXT_THEME.bg }}
+            style={{
+              background: records[i] ? (records[i].correct ? "#22C55E" : "#EF4444") : NEXT_THEME.bg,
+            }}
           />
         ))}
       </div>
@@ -238,8 +245,12 @@ export function PracticeSession({
 
       {/* Always as tall as the Explanation + Next pair, so swapping Check for them
           doesn't grow the page and nothing below the sentence moves. Its extra top margin
-          makes the gap above it match the one between the sentence and the cards. */}
-      <div className="mt-6 flex min-h-[108px] flex-col gap-3">
+          (on top of the 24px column gap) makes the gap above it match the one between the
+          sentence and the cards. */}
+      <div
+        className="flex min-h-[108px] flex-col gap-3"
+        style={{ marginTop: "calc(var(--question-gap) - 24px)" }}
+      >
         {!checkResult && (
           <Button onClick={handleCheck} disabled={!allGapsFilled}>
             Check

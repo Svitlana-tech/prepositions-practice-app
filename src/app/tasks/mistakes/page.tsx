@@ -35,7 +35,7 @@ export default function FixMistakesPage() {
   // Tall bottom padding: in-app browsers (Telegram, iOS Safari) float their toolbar over
   // the page bottom, so the last button needs room to scroll up clear of it.
   return (
-    <div className="mx-auto max-w-2xl px-6 pt-10 pb-40 md:max-w-3xl lg:max-w-4xl">
+    <div className="mx-auto max-w-2xl px-6 pt-6 pb-40 md:max-w-3xl lg:max-w-4xl">
       {/* No title during the session itself — the student knows where they tapped, and
           the progress bar takes the top of the screen like in the other tests. */}
       {taskIds.length === 0 ? (
