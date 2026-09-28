@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { shuffle, randomTilt } from "@/lib/shuffle";
 import type { FillInBlankPayload, CurrentAnswers, CheckResult } from "@/components/student/QuestionRenderers";
 
@@ -113,8 +113,16 @@ const STYLE = `
   color: var(--select-ring);
   font-weight: 700;
 }
+/* Examples read like a teacher's handwritten note in blue ink. */
 .prep-cards .explanation-example {
-  font-style: italic;
+  font-family: var(--font-handwriting), "Segoe Print", "Comic Sans MS", cursive;
+  font-size: 1.3em;
+  line-height: 1.25;
+  color: #1E4FA8;
+}
+.prep-cards .explanation-example.own-line {
+  display: block;
+  margin-top: 0.35em;
 }
 `;
 
@@ -187,6 +195,35 @@ function parseExplanationText(text: string, isRule: boolean): ExplanationBlock[]
     .map((p) => p.trim())
     .filter(Boolean)
     .map((p) => parseExplanationBlock(p, isRule));
+}
+
+/** Quoted words in an explanation ("Come with something" means…) are the phrase being
+ *  explained: shown bold in the highlight colour, without the quote marks. Straight and
+ *  curly double quotes both count; apostrophes (don't, friend's) are left alone. */
+const QUOTED = /["“”«»]([^"“”«»\n]+)["“”«»]/g;
+
+function HighlightQuoted({ text }: { text: string }) {
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(QUOTED)) {
+    parts.push(text.slice(last, m.index));
+    parts.push(
+      <span key={m.index} className="explanation-phrase">
+        {m[1]}
+      </span>
+    );
+    last = m.index + m[0].length;
+  }
+  parts.push(text.slice(last));
+  return <>{parts}</>;
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function stripQuotes(text: string): string {
+  return text.replace(/["“”«»]/g, "");
 }
 
 function useCardLayout(options: string[]) {
@@ -397,7 +434,88 @@ export function PrepositionCardsQuestion({
     () => (shownExplanation ? parseExplanationText(shownExplanation, shownExplanationIsLong) : []),
     [shownExplanation, shownExplanationIsLong]
   );
-  const explanationOpen = standalone ? showFullExplanation : showExplanation && !!shownExplanation;
+  // Tests: the explanation takes the cards' place with a flip. Asked to open, the cards turn
+  // edge-on in a diagonal wave and vanish, then the explanation turns to face the student
+  // like a card's back. Asked to close, it fades and the cards pop back in.
+  const wantExplanation = !standalone && showExplanation && !!shownExplanation;
+  const [explanationShown, setExplanationShown] = useState(false);
+  const explanationRef = useRef<HTMLDivElement | null>(null);
+  const flipSeqRef = useRef(0);
+  const cardsReturningRef = useRef(false);
+
+  useEffect(() => {
+    if (standalone) return;
+    const seq = ++flipSeqRef.current;
+    const cardEls = cards.map(({ word }) => cardRefs.current[word]);
+    if (wantExplanation && !explanationShown) {
+      if (prefersReducedMotion()) {
+        setExplanationShown(true);
+        return;
+      }
+      const flips = cards.map(({ tilt }, i) =>
+        cardEls[i]?.animate(
+          [
+            { transform: `perspective(600px) rotate(${tilt}deg) rotateY(0deg)`, opacity: 1 },
+            { transform: `perspective(600px) rotate(${tilt}deg) rotateY(90deg)`, opacity: 0 },
+          ],
+          { duration: 220, delay: ((i % 3) + Math.floor(i / 3)) * 55, easing: "ease-in", fill: "forwards" }
+        )
+      );
+      Promise.all(flips.map((a) => a?.finished))
+        .then(() => {
+          if (flipSeqRef.current === seq) setExplanationShown(true);
+        })
+        .catch(() => {});
+    } else if (!wantExplanation && explanationShown) {
+      const el = explanationRef.current;
+      if (!el || prefersReducedMotion()) {
+        setExplanationShown(false);
+        return;
+      }
+      el.getAnimations().forEach((a) => a.cancel());
+      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: "forwards" })
+        .finished.then(() => {
+          if (flipSeqRef.current !== seq) return;
+          cardsReturningRef.current = true;
+          setExplanationShown(false);
+        })
+        .catch(() => {});
+    } else if (wantExplanation && explanationShown) {
+      // Reopened while fading out: stop the fade.
+      explanationRef.current?.getAnimations().forEach((a) => a.cancel());
+    } else {
+      // Closed again mid-flip: put the cards straight back.
+      cardEls.forEach((el) => el?.getAnimations().forEach((a) => a.cancel()));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantExplanation]);
+
+  useLayoutEffect(() => {
+    if (standalone || prefersReducedMotion()) return;
+    if (explanationShown) {
+      explanationRef.current?.animate(
+        [
+          { transform: "perspective(900px) rotateY(-90deg)", opacity: 0 },
+          { transform: "perspective(900px) rotateY(0deg)", opacity: 1 },
+        ],
+        { duration: 380, easing: "cubic-bezier(.2,.9,.3,1.15)" }
+      );
+    } else if (cardsReturningRef.current) {
+      cardsReturningRef.current = false;
+      cards.forEach(({ word, tilt }, i) =>
+        cardRefs.current[word]?.animate(
+          [
+            { transform: `rotate(${tilt}deg) scale(.6)`, opacity: 0 },
+            { transform: `rotate(${tilt}deg) scale(1)`, opacity: 1 },
+          ],
+          { duration: 260, delay: i * 30, easing: "cubic-bezier(.34,1.56,.64,1)", fill: "backwards" }
+        )
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [explanationShown]);
+
+  const explanationOpen = standalone ? showFullExplanation : explanationShown;
 
   return (
     <div
@@ -425,23 +543,38 @@ export function PrepositionCardsQuestion({
 
       {explanationOpen ? (
         <div
+          // Keyed apart from the card grid, so the two never share a DOM node (the
+          // explanation's fade-out would otherwise stay on the returning grid).
+          key="explanation"
+          ref={explanationRef}
           className="explanation-scroll rounded-2xl bg-white p-5 text-left text-base leading-relaxed"
           style={{ color: "var(--sentence)", border: "1.5px solid var(--card-border)" }}
         >
           {explanationBlocks.map((block, i) => (
             <p key={i} className="explanation-block">
-              {block.phrase && <span className="explanation-phrase">{block.phrase}</span>}
+              {block.phrase && <span className="explanation-phrase">{stripQuotes(block.phrase)}</span>}
               {block.phrase && " - "}
-              {block.sentences.map((s, j) => (
-                <span key={j} className={s.isExample ? "explanation-example" : undefined}>
-                  {s.text}{" "}
-                </span>
-              ))}
+              {block.sentences.map((s, j) =>
+                s.isExample ? (
+                  // One block: the example gets its own line. Several (a rule comparing
+                  // prepositions): it stays in the paragraph, to save room.
+                  <span
+                    key={j}
+                    className={`explanation-example ${explanationBlocks.length === 1 ? "own-line" : ""}`}
+                  >
+                    {stripQuotes(s.text)}{" "}
+                  </span>
+                ) : (
+                  <span key={j}>
+                    <HighlightQuoted text={s.text} />{" "}
+                  </span>
+                )
+              )}
             </p>
           ))}
         </div>
       ) : (
-        <div className="options">
+        <div key="cards" className="options">
           {cards.map(({ word, tilt, delay }) => {
             const isSelected = selected === word && !cardsDisabled;
             const isWrong = wrongWords.has(word);

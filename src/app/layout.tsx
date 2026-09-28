@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Caveat, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { RegisterServiceWorker } from "./register-sw";
 
@@ -10,6 +10,12 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+/** Handwriting face for the example sentences in explanations. */
+const handwriting = Caveat({
+  variable: "--font-handwriting",
   subsets: ["latin"],
 });
 
@@ -31,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${handwriting.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <RegisterServiceWorker />
