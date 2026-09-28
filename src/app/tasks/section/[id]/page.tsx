@@ -90,15 +90,24 @@ export default function SectionPage() {
         const placed = new Set([...everyday.topics, "Phrasal Verbs", ACADEMIC_TOPIC_NAME]);
         // Topics added later that the layout doesn't know yet still get a row, after Academic.
         const extras = t.topics.filter((topic) => !placed.has(topic.name));
+        // Each button's place in the opening animation, top to bottom (Daily Mix is 0).
+        let order = 0;
+        const nextOrder = () => ++order;
 
         return (
           <div key={t.type} className="mb-8 flex flex-col">
-            <Link href={`/tasks/practice?type=${t.type}&section=${params.id}`}>
+            <Link
+              href={`/tasks/practice?type=${t.type}&section=${params.id}`}
+              className="menu-enter"
+              style={{ "--i": 0 } as React.CSSProperties}
+            >
               <div
-                className="flex flex-col items-center rounded-2xl p-4 text-center transition-transform hover:scale-[1.01]"
+                className="flex flex-col items-center rounded-2xl p-4 text-center transition-transform hover:scale-[1.01] active:scale-[0.97]"
                 style={{ background: "#FEF3C7", color: "#B45309", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
               >
-                <div className="text-2xl font-bold">⚡ Daily Mix</div>
+                <div className="text-2xl font-bold">
+                  <span className="menu-bolt">⚡</span> Daily Mix
+                </div>
                 <div className="text-[13px] font-medium opacity-85">10 random cards for today&apos;s drill</div>
               </div>
             </Link>
@@ -112,6 +121,7 @@ export default function SectionPage() {
                   title={everyday.name}
                   hint="in, on, at, by…"
                   bg={TOPICS_BG}
+                  order={nextOrder()}
                 />
               )}
               {phrasal && (
@@ -121,6 +131,7 @@ export default function SectionPage() {
                   title={phrasal.name}
                   hint="look after, give up…"
                   bg={TOPICS_BG}
+                  order={nextOrder()}
                 />
               )}
               {academic && (
@@ -130,6 +141,7 @@ export default function SectionPage() {
                   title="Academic & Exams"
                   hint="IELTS / Formal Writing"
                   bg={TOPICS_BG}
+                  order={nextOrder()}
                 />
               )}
               {extras.map((topic) => (
@@ -139,6 +151,7 @@ export default function SectionPage() {
                   icon={getCategoryTheme(topic.name).icon}
                   title={topic.name}
                   bg={TOPICS_BG}
+                  order={nextOrder()}
                 />
               ))}
             </div>
@@ -155,8 +168,16 @@ export default function SectionPage() {
                     : `${mistakeCount} ${mistakeCount === 1 ? "sentence" : "sentences"} to try again`
                 }
                 bg={PRACTICE_BG}
+                order={nextOrder()}
               />
-              <MenuRow href="/tasks/free-flow" icon="☕" title="Relaxed Practice" hint="no score, at your own pace" bg={PRACTICE_BG} />
+              <MenuRow
+                href="/tasks/free-flow"
+                icon="☕"
+                title="Relaxed Practice"
+                hint="no score, at your own pace"
+                bg={PRACTICE_BG}
+                order={nextOrder()}
+              />
             </div>
           </div>
         );
@@ -180,17 +201,20 @@ function MenuRow({
   title,
   hint,
   bg,
+  order,
 }: {
   href: string;
   icon: string;
   title: string;
   hint?: string;
   bg: string;
+  /** Place in the menu's opening animation (see .menu-enter in globals.css). */
+  order: number;
 }) {
   return (
-    <Link href={href}>
+    <Link href={href} className="menu-enter" style={{ "--i": order } as React.CSSProperties}>
       <div
-        className="flex items-center gap-3 rounded-[14px] px-3 py-2.5 transition-transform hover:scale-[1.01]"
+        className="flex items-center gap-3 rounded-[14px] px-3 py-2.5 transition-transform hover:scale-[1.01] active:scale-[0.97]"
         style={{ background: bg, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
       >
         <div className="grid h-[46px] w-[46px] flex-none place-items-center rounded-full bg-white text-2xl">
