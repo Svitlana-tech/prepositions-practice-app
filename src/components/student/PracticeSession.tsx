@@ -9,6 +9,7 @@ import type { TaskType } from "@/lib/taskSchemas";
 import { getMistakeIds, recordFirstTry, removeMistake } from "@/lib/mistakes";
 import { forgetSeen, getSeenIds, markSeen } from "@/lib/seenTasks";
 import { SessionResults, type AnswerRecord } from "@/components/student/SessionResults";
+import { REVEAL_DELAY_MS } from "@/components/student/PrepositionCards";
 import {
   FillInBlankQuestion,
   type QuestionPayload as Payload,
@@ -22,6 +23,9 @@ const EXPLANATION_THEME = getCategoryTheme("Dependent");
 const NEXT_THEME = getCategoryTheme("Essential");
 /** Room kept free under the Next button for a phone browser's floating toolbar. */
 const TOOLBAR_ROOM_PX = 96;
+/** After the right answer lands in the sentence, a moment for its pop to play before the
+ *  buttons come in. */
+const ANSWER_SETTLE_MS = 450;
 /** Space between the sentence and the cards, and between the cards and the buttons:
  *  48px on a tall phone screen, down to 24px on a short one, so the whole question fits
  *  without scrolling on as many phones as possible. */
@@ -59,6 +63,7 @@ export function PracticeSession({
   const [retryTick, setRetryTick] = useState(0);
   const [currentAnswers, setCurrentAnswers] = useState<CurrentAnswers>({});
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
+  const [buttonsShown, setButtonsShown] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [finished, setFinished] = useState(false);
@@ -159,7 +164,7 @@ export function PracticeSession({
   // phone browser's floating toolbar (e.g. Telegram's in-app browser) — a short screen —
   // is it scrolled into view, with room to spare below it (its scroll-mb).
   useEffect(() => {
-    if (!checkResult) return;
+    if (!buttonsShown) return;
     // Next frame: the layout is still settling (Check button swapped for the feedback)
     // and a scroll started mid-change gets dropped.
     const frame = requestAnimationFrame(() => {
@@ -169,6 +174,19 @@ export function PracticeSession({
       }
     });
     return () => cancelAnimationFrame(frame);
+  }, [buttonsShown]);
+
+  // One thing at a time: Explanation and Next only come in once the right answer stands in
+  // the sentence — right away after a correct answer (its pop has played), or after a
+  // wrong one once the wrong-answer face is gone and the right card has lit up.
+  useEffect(() => {
+    if (!checkResult) return;
+    const correct = checkResult.score === checkResult.maxScore;
+    const cards = payload?.displayMode === "cards" && payload.gaps.length === 1;
+    const delay = !cards ? 0 : (correct ? 0 : REVEAL_DELAY_MS) + ANSWER_SETTLE_MS;
+    const timer = window.setTimeout(() => setButtonsShown(true), delay);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkResult]);
 
   const current = taskIds && index < taskIds.length ? loadedTasks[taskIds[index]] : undefined;
@@ -211,6 +229,7 @@ export function PracticeSession({
     if (index + 1 < taskIds.length) {
       setCurrentAnswers({});
       setCheckResult(null);
+      setButtonsShown(false);
       setShowExplanation(false);
       setIndex(index + 1);
       return;
@@ -278,14 +297,18 @@ export function PracticeSession({
 
         {/* Right or wrong, the answer shows in the sentence itself; the explanation opens
             only on request, and Next skips straight to the following question. */}
-        {checkResult && (
+        {checkResult && buttonsShown && (
           <div ref={nextRef} className="flex scroll-mb-32 flex-col gap-3">
             {checkResult.explanation && (
-              <SlimButton theme={EXPLANATION_THEME} onClick={() => setShowExplanation((open) => !open)}>
+              <SlimButton
+                theme={EXPLANATION_THEME}
+                order={0}
+                onClick={() => setShowExplanation((open) => !open)}
+              >
                 {showExplanation ? "Hide explanation" : "Explanation"}
               </SlimButton>
             )}
-            <SlimButton theme={NEXT_THEME} onClick={handleNext}>
+            <SlimButton theme={NEXT_THEME} order={checkResult.explanation ? 1 : 0} onClick={handleNext}>
               {index + 1 < taskIds.length ? "Next →" : "Finish"}
             </SlimButton>
           </div>
@@ -295,12 +318,15 @@ export function PracticeSession({
   );
 }
 
+/** An after-Check button. They come in one after another (`order`), rising into place. */
 function SlimButton({
   theme,
+  order,
   onClick,
   children,
 }: {
   theme: { bg: string; accent: string };
+  order: number;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -308,8 +334,15 @@ function SlimButton({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-2xl py-2.5 text-lg font-bold transition-transform active:scale-[0.98]"
-      style={{ background: theme.bg, color: theme.accent, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+      className="answer-button-in w-full rounded-2xl py-2.5 text-lg font-bold transition-transform active:scale-[0.98]"
+      style={
+        {
+          background: theme.bg,
+          color: theme.accent,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+          "--i": order,
+        } as React.CSSProperties
+      }
     >
       {children}
     </button>

@@ -40,6 +40,11 @@ body {
   display: inline-block;
   animation: menu-bolt 4s ease-in-out 1.2s infinite;
 }
+/* Tests: Explanation, then Next, rise in one after the other once the answer is shown. */
+.answer-button-in {
+  animation: menu-rise 0.35s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 250ms);
+}
 @media (prefers-reduced-motion: reduce) {
-  .menu-enter, .menu-bolt { animation: none; }
+  .menu-enter, .menu-bolt, .answer-button-in { animation: none; }
 }

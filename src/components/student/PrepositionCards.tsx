@@ -129,7 +129,7 @@ const STYLE = `
 const WRONG_FACE_MS = 2000;
 /** In tests, the right card lights up only once the face is fully gone, after a short pause —
  *  both at once looked muddled. */
-const REVEAL_DELAY_MS = WRONG_FACE_MS + 500;
+export const REVEAL_DELAY_MS = WRONG_FACE_MS + 500;
 
 type ExplanationSentence = { text: string; isExample: boolean };
 type ExplanationBlock = { phrase: string | null; sentences: ExplanationSentence[] };
