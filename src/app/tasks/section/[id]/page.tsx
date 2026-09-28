@@ -87,72 +87,75 @@ export default function SectionPage() {
         const phrasal = byName.get("Phrasal Verbs");
         const academic = byName.get(ACADEMIC_TOPIC_NAME);
         const placed = new Set([...everyday.topics, "Phrasal Verbs", ACADEMIC_TOPIC_NAME]);
-        // Topics added later that the layout doesn't know yet still get a tile, after Academic.
+        // Topics added later that the layout doesn't know yet still get a row, after Academic.
         const extras = t.topics.filter((topic) => !placed.has(topic.name));
-        const mistakesTheme = getCategoryTheme(ACADEMIC_TOPIC_NAME);
 
         return (
           <div key={t.type} className="mb-8 flex flex-col">
             <Link href={`/tasks/practice?type=${t.type}&section=${params.id}`}>
               <div
-                className="flex h-[76px] flex-col items-center justify-center rounded-2xl px-3 text-center transition-transform hover:scale-[1.01]"
-                style={{ background: DAILY_MIX_THEME.bg, boxShadow: TILE_SHADOW }}
+                className="flex flex-col items-center rounded-2xl p-4 text-center transition-transform hover:scale-[1.01]"
+                style={{ background: "#FEF3C7", color: "#B45309", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
               >
-                <div className="text-2xl font-bold leading-tight" style={{ color: DAILY_MIX_THEME.accent }}>
-                  ⚡ Daily Mix
-                </div>
-                <div className="text-sm opacity-80" style={{ color: DAILY_MIX_THEME.accent }}>
-                  10 random cards for today&apos;s drill
-                </div>
+                <div className="text-2xl font-bold">⚡ Daily Mix</div>
+                <div className="text-[13px] font-medium opacity-85">10 random cards for today&apos;s drill</div>
               </div>
             </Link>
 
-            <div className="grid grid-cols-2 gap-3" style={{ marginTop: GROUP_GAP }}>
+            {/* Block 2: the topics, in blue. */}
+            <div className="mt-9 flex flex-col gap-2">
               {hasEveryday && (
-                <TopicTile
+                <MenuRow
                   href={`/tasks/practice?type=${t.type}&group=${EVERYDAY_GROUP}&section=${params.id}`}
                   icon={getCategoryTheme("Essential").icon}
-                  lines={everyday.name.split(" ")}
-                  {...TOPICS_THEME}
+                  title={everyday.name}
+                  hint="in, on, at, by…"
+                  bg={TOPICS_BG}
                 />
               )}
               {phrasal && (
-                <TopicTile
+                <MenuRow
                   href={hrefFor(phrasal)}
                   icon={getCategoryTheme(phrasal.name).icon}
-                  lines={phrasal.name.split(" ")}
-                  {...TOPICS_THEME}
+                  title={phrasal.name}
+                  hint="look after, give up…"
+                  bg={TOPICS_BG}
                 />
               )}
               {academic && (
-                <TopicTile
+                <MenuRow
                   href={hrefFor(academic)}
                   icon={getCategoryTheme(academic.name).icon}
-                  lines={["Academic & Exams", "IELTS / Formal Writing"]}
-                  wide
-                  {...TOPICS_THEME}
+                  title="Academic & Exams"
+                  hint="IELTS / Formal Writing"
+                  bg={TOPICS_BG}
                 />
               )}
               {extras.map((topic) => (
-                <TopicTile
+                <MenuRow
                   key={topic.id}
                   href={hrefFor(topic)}
                   icon={getCategoryTheme(topic.name).icon}
-                  lines={topic.name.split(" ")}
-                  {...TOPICS_THEME}
+                  title={topic.name}
+                  bg={TOPICS_BG}
                 />
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-3" style={{ marginTop: GROUP_GAP }}>
-              <TopicTile
+            {/* Block 3: the practice modes, in warm sand. */}
+            <div className="mt-11 flex flex-col gap-2">
+              <MenuRow
                 href="/tasks/mistakes"
                 icon={FIX_MISTAKES_THEME.icon}
-                lines={["Fix", mistakeCount ? `Mistakes (${mistakeCount})` : "Mistakes"]}
-                bg={mistakesTheme.bg}
-                accent={mistakesTheme.accent}
+                title="Fix Mistakes"
+                hint={
+                  mistakeCount === 0
+                    ? "No mistakes yet"
+                    : `${mistakeCount} ${mistakeCount === 1 ? "sentence" : "sentences"} to try again`
+                }
+                bg={PRACTICE_BG}
               />
-              <TopicTile href="/tasks/free-flow" icon="☕" lines={["Relaxed", "Practice"]} {...RELAXED_THEME} />
+              <MenuRow href="/tasks/free-flow" icon="☕" title="Relaxed Practice" hint="no score, at your own pace" bg={PRACTICE_BG} />
             </div>
           </div>
         );
@@ -164,48 +167,39 @@ export default function SectionPage() {
 /** The TOPIC_GROUPS key behind the Everyday Prepositions button. */
 const EVERYDAY_GROUP = "everyday";
 
-const DAILY_MIX_THEME = { bg: "#FEF3C7", accent: "#D97706" }; // warm amber on sand
-/** Everyday Prepositions, Phrasal Verbs and Academic all share one blue. */
-const TOPICS_THEME = { bg: "#E3F2FD", accent: "#1565C0" };
-/** Relaxed Practice (the Free Flow deck): calm sage. */
-const RELAXED_THEME = { bg: "#ECFDF5", accent: "#047857" };
+/** Each block of rows has its own light background, so children tell them apart at a glance. */
+const TOPICS_BG = "#E3F2FD";
+const PRACTICE_BG = "#FDF6EC";
 
-const TILE_SHADOW = "0 4px 12px rgba(0,0,0,0.05)";
-/** About 1.5 cm between the three groups — less on short screens, so the whole menu
- *  still fits on one phone screen. */
-const GROUP_GAP = "min(80px, 8dvh)";
-
-/** A menu button: its name in lines, centered, with the icon in front of the first line.
- *  `wide` spans both columns and is a little lower. */
-function TopicTile({
+/** A full-width menu row: icon in a white circle, the name with a short grey hint under it,
+ *  and an arrow on the right. */
+function MenuRow({
   href,
   icon,
-  lines,
-  wide = false,
+  title,
+  hint,
   bg,
-  accent,
 }: {
   href: string;
   icon: string;
-  lines: string[];
-  wide?: boolean;
+  title: string;
+  hint?: string;
   bg: string;
-  accent: string;
 }) {
   return (
-    <Link href={href} className={wide ? "col-span-2" : undefined}>
+    <Link href={href}>
       <div
-        className={`flex ${wide ? "h-24" : "h-28"} flex-col items-center justify-center rounded-2xl px-2 py-1 text-center transition-transform hover:scale-[1.02]`}
-        style={{ background: bg, boxShadow: TILE_SHADOW }}
+        className="flex items-center gap-3 rounded-[14px] px-3 py-2.5 transition-transform hover:scale-[1.01]"
+        style={{ background: bg, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
       >
-        <div className="text-lg font-bold leading-tight" style={{ color: accent }}>
-          {lines.map((line, i) => (
-            <div key={line}>
-              {i === 0 && <span className="mr-1.5 text-2xl align-middle">{icon}</span>}
-              {line}
-            </div>
-          ))}
+        <div className="grid h-[46px] w-[46px] flex-none place-items-center rounded-full bg-white text-2xl">
+          {icon}
         </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-base font-bold text-gray-900">{title}</div>
+          {hint && <div className="text-[12.5px] text-gray-500">{hint}</div>}
+        </div>
+        <span className="text-[22px] text-gray-400">›</span>
       </div>
     </Link>
   );
