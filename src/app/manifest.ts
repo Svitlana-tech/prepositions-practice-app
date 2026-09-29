@@ -3,7 +3,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Preposition Master",
-    short_name: "Preposition Master",
+    // The label under the home-screen icon — short enough not to be cut off on iPhone,
+    // and it spells out the three cards on the icon.
+    short_name: "In·On·At",
     description: "Master English prepositions in 2 minutes a day.",
     start_url: "/",
     display: "standalone",

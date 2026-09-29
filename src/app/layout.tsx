@@ -27,7 +27,8 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Preposition Master",
+    // iPhone's home-screen label (same short name as the manifest's short_name).
+    title: "In·On·At",
   },
 };
 
