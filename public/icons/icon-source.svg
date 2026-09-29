@@ -1,0 +1,11 @@
+<!-- Source of the app icon ("in · on · at" cards on the menu blue). The PNGs next to it and
+     src/app/apple-icon.png / icon.png were rendered from this with sharp; the maskable copy
+     scales the card group to 0.78 around the centre. -->
+<svg viewBox="0 0 100 100" width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="#1565C0"/>
+  <g font-family="Arial, Helvetica, Liberation Sans, sans-serif" font-weight="700" font-size="14" text-anchor="middle">
+    <g transform="rotate(-14 28 74)"><rect x="13" y="28" width="30" height="44" rx="6" fill="#E3F2FD"/><text x="25" y="47" fill="#1565C0">in</text></g>
+    <g transform="rotate(14 72 74)"><rect x="57" y="28" width="30" height="44" rx="6" fill="#E3F2FD"/><text x="75" y="47" fill="#1565C0">at</text></g>
+    <g><rect x="34" y="22" width="32" height="48" rx="7" fill="#FFFFFF"/><text x="50" y="43" fill="#1565C0">on</text></g>
+  </g>
+</svg>
