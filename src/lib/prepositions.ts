@@ -15,3 +15,16 @@ export const PREPOSITIONS = [
   "beyond", "near", "past", "out of", "out", "around", "up", "away",
   "out off", "off of", "out from", "as", "because", "—",
 ] as const;
+
+/** True when the gap opens a sentence: nothing before it, or the text before it ends a
+ *  sentence ("…today. {gap} …"). */
+export function gapStartsSentence(before: string): boolean {
+  const t = before.trimEnd();
+  return t === "" || /[.!?]["'’”)]?$/.test(t);
+}
+
+/** The word as it reads in the sentence: "in" → "In" when the gap opens the sentence.
+ *  Stored answers stay lower-case; this is display only. */
+export function capitalizeForGap(word: string, before: string): string {
+  return gapStartsSentence(before) ? word.charAt(0).toUpperCase() + word.slice(1) : word;
+}

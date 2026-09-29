@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { capitalizeForGap } from "@/lib/prepositions";
 import { recordFinishedSession, type SessionProgress } from "@/lib/progress";
 
 /** One answered question of the session, as the results screen needs it. */
@@ -38,8 +39,11 @@ function verdict(score: number, total: number): string {
  *  it can be highlighted. "—" (no preposition needed) just closes the gap. */
 function fullSentence(text: string, answer: string): { before: string; answer: string; after: string } {
   const [before = "", after = ""] = text.split(/\{[^}]+\}/);
-  if (answer === "—") return { before: `${before.trimEnd()} ${after.trimStart()}`, answer: "", after: "" };
-  return { before, answer, after };
+  if (answer === "—") {
+    const rest = after.trimStart();
+    return { before: `${before.trimEnd()} ${capitalizeForGap(rest, before)}`.trimStart(), answer: "", after: "" };
+  }
+  return { before, answer: capitalizeForGap(answer, before), after };
 }
 
 /** The end-of-session screen: result, rewards, the sentences to remember, what next. */

@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { shuffle, randomTilt } from "@/lib/shuffle";
+import { capitalizeForGap } from "@/lib/prepositions";
 import type { FillInBlankPayload, CurrentAnswers, CheckResult } from "@/components/student/QuestionRenderers";
 
 const STYLE = `
@@ -535,7 +536,7 @@ export function PrepositionCardsQuestion({
             blankShown ? "correct pop" : blankWrong ? "wrong" : ""
           }`}
         >
-          {blankWord || " "}
+          {blankWord ? capitalizeForGap(blankWord, before) : " "}
         </span>
         {after}
       </p>
