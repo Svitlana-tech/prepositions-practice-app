@@ -6,6 +6,7 @@ import { getStoredStudentName } from "@/lib/studentName";
 import { getOnboardingSeen, setOnboardingSeen } from "@/lib/onboarding";
 import { NameCaptureForm } from "@/components/student/NameCaptureForm";
 import { WelcomeScreen } from "@/components/student/WelcomeScreen";
+import { WelcomeHero } from "@/components/student/WelcomeHero";
 
 export default function Home() {
   const router = useRouter();
@@ -38,9 +39,8 @@ export default function Home() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
-      <h1 className="mb-2 text-2xl font-semibold text-gray-900">Preposition Master</h1>
-      <p className="mb-6 text-gray-600">Enter your name to start practicing.</p>
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col px-5 pb-8">
+      <WelcomeHero subtitle="10 quick cards · 2 minutes a day" />
       <NameCaptureForm />
     </div>
   );

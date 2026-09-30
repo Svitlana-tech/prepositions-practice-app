@@ -1,59 +1,35 @@
 "use client";
 
+import { WelcomeHero } from "@/components/student/WelcomeHero";
+
+// Same look as the menu rows: blue, amber (like Daily Mix), sand.
 const FEATURES = [
-  {
-    icon: "🎯",
-    iconBg: "#E8F5E9",
-    iconColor: "#2E7D32",
-    title: "Choose a Topic",
-    subtitle: "Practice Verbs, Adjectives, Expressions, or Phrasal Verbs.",
-  },
-  {
-    icon: "⏱️",
-    iconBg: "#FFF3E0",
-    iconColor: "#E65100",
-    title: "Quick 2-Minute Bites",
-    subtitle: "10-card sessions designed to fit seamlessly into your day.",
-  },
-  {
-    icon: "💡",
-    iconBg: "#E3F2FD",
-    iconColor: "#1565C0",
-    title: "Learn Rules on the Fly",
-    subtitle: "Clear patterns, explanations, and real-life examples for every card.",
-  },
+  { icon: "👆", bg: "#E3F2FD", title: "Tap the right card", subtitle: "Fill the gap in the sentence" },
+  { icon: "⚡", bg: "#FEF3C7", title: "10 cards at a time", subtitle: "A quick round, then your score" },
+  { icon: "💡", bg: "#F8ECDA", title: "See why", subtitle: "A short rule and an example" },
 ];
 
+/** First launch only: what the app is, then on to the name screen. */
 export function WelcomeScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-8 px-6 py-10">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold" style={{ color: "#2B2D42" }}>
-          Preposition Master
-        </h1>
-        <p className="mt-2 text-base" style={{ color: "#6C757D" }}>
-          Master English prepositions in 2 minutes a day.
-        </p>
-      </div>
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col justify-between gap-6 px-5 pb-8">
+      <WelcomeHero subtitle="Prepositions in 2 minutes a day" />
 
-      <div className="flex flex-col gap-3">
-        {FEATURES.map((f) => (
+      <div className="flex flex-col gap-2.5">
+        {FEATURES.map((f, i) => (
           <div
             key={f.title}
-            className="flex items-start gap-4 rounded-2xl bg-white p-4"
-            style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+            className="menu-enter flex items-center gap-3 rounded-2xl px-3 py-3"
+            style={{ background: f.bg, ["--i" as string]: i + 1 }}
           >
-            <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl"
-              style={{ background: f.iconBg, color: f.iconColor }}
-            >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-lg">
               {f.icon}
             </div>
             <div>
-              <div className="font-semibold" style={{ color: "#2B2D42" }}>
+              <div className="text-[15px] font-bold" style={{ color: "#2B2D42" }}>
                 {f.title}
               </div>
-              <div className="text-sm" style={{ color: "#6C757D" }}>
+              <div className="text-[13px]" style={{ color: "#6C757D" }}>
                 {f.subtitle}
               </div>
             </div>
@@ -64,10 +40,10 @@ export function WelcomeScreen({ onStart }: { onStart: () => void }) {
       <button
         type="button"
         onClick={onStart}
-        className="w-full py-3.5 text-base font-bold"
-        style={{ background: "#2A9D8F", color: "#FFFFFF", borderRadius: "14px" }}
+        className="menu-enter w-full py-3.5 text-base font-bold transition-transform active:scale-[0.97]"
+        style={{ background: "#1565C0", color: "#FFFFFF", borderRadius: "14px", ["--i" as string]: 4 }}
       >
-        Start Practice
+        Let&apos;s start
       </button>
     </div>
   );
