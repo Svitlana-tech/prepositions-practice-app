@@ -63,6 +63,7 @@ export function PracticeSession({
   const [retryTick, setRetryTick] = useState(0);
   const [currentAnswers, setCurrentAnswers] = useState<CurrentAnswers>({});
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
+  const [checking, setChecking] = useState(false);
   const [buttonsShown, setButtonsShown] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [records, setRecords] = useState<AnswerRecord[]>([]);
@@ -198,29 +199,42 @@ export function PracticeSession({
     payload.gaps.every((g) => currentAnswers[g.id] !== undefined && currentAnswers[g.id] !== "");
 
   async function handleCheck() {
-    if (!taskIds || !allGapsFilled) return;
+    if (!taskIds || !allGapsFilled || checking) return;
     const taskId = taskIds[index];
-    const res = await fetch("/api/practice/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ taskId, answers: currentAnswers }),
-    });
-    const result: CheckResult = await res.json();
-    const correct = result.score === result.maxScore;
-    setCheckResult(result);
-    recordFirstTry(taskId, correct);
-    if (payload) {
-      const gapId = payload.gaps[0]?.id ?? "gap1";
-      setRecords((prev) => [
-        ...prev,
-        {
-          taskId,
-          text: payload.text,
-          chosen: String(currentAnswers[gapId] ?? ""),
-          correctAnswer: result.reveal?.correctAnswers?.[gapId] ?? "",
-          correct,
-        },
-      ]);
+    const questionIndex = index;
+    // Check stays on screen while the answer is on its way to the server — on a slow phone
+    // connection a second tap used to send it twice and fill two progress segments.
+    setChecking(true);
+    try {
+      const res = await fetch("/api/practice/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, answers: currentAnswers }),
+      });
+      const result: CheckResult = await res.json();
+      const correct = result.score === result.maxScore;
+      setCheckResult(result);
+      recordFirstTry(taskId, correct);
+      if (payload) {
+        const gapId = payload.gaps[0]?.id ?? "gap1";
+        // One record per question, whatever happens.
+        setRecords((prev) =>
+          prev.length !== questionIndex
+            ? prev
+            : [
+                ...prev,
+                {
+                  taskId,
+                  text: payload.text,
+                  chosen: String(currentAnswers[gapId] ?? ""),
+                  correctAnswer: result.reveal?.correctAnswers?.[gapId] ?? "",
+                  correct,
+                },
+              ]
+        );
+      }
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -290,7 +304,7 @@ export function PracticeSession({
         style={{ marginTop: "calc(var(--question-gap) - 24px)" }}
       >
         {!checkResult && (
-          <Button onClick={handleCheck} disabled={!allGapsFilled}>
+          <Button onClick={handleCheck} disabled={!allGapsFilled || checking}>
             Check
           </Button>
         )}
