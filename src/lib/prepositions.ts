@@ -3,7 +3,7 @@
  * "cards"). Mostly simple prepositions, plus a small set of fixed multi-word ones she's
  * explicitly asked to include (e.g. "out of") when a sentence specifically needs one, and
  * "—" for sentences where Russian/Ukrainian uses a preposition but English doesn't.
- * Phrasal verbs add particles ("up", "away") and a few of her deliberate wrong-form traps
+ * Phrasal verbs add particles ("up", "away", "down", "back") and a few of her deliberate wrong-form traps
  * ("out off", "off of", "out from"), "because", and "than" / "like" ("prefer … than",
  * "regard … like") — all distractors only, never a right answer. "as" is both a
  * distractor and the answer in "regard someone as".
@@ -13,7 +13,7 @@ export const PREPOSITIONS = [
   "into", "onto", "off", "over", "under", "above", "below", "between",
   "among", "through", "during", "before", "after", "since", "until",
   "against", "without", "within", "along", "across", "behind",
-  "beyond", "near", "past", "out of", "out", "around", "up", "away",
+  "beyond", "near", "past", "out of", "out", "around", "up", "away", "down", "back",
   "out off", "off of", "out from", "as", "because", "than", "like", "—",
 ] as const;
 
