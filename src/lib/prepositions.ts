@@ -4,7 +4,7 @@
  * explicitly asked to include (e.g. "out of") when a sentence specifically needs one, and
  * "—" for sentences where Russian/Ukrainian uses a preposition but English doesn't.
  * Phrasal verbs add particles ("up", "away", "down", "back", "together") and a few of her deliberate wrong-form traps
- * ("out off", "off of", "out from"), "because", and "than" / "like" ("prefer … than",
+ * ("out off", "off of", "out from"), "because", and "than" / "like" / "while" ("prefer … than", "while the match",
  * "regard … like") — all distractors only, never a right answer. "as" is both a
  * distractor and the answer in "regard someone as".
  */
@@ -14,6 +14,7 @@ export const PREPOSITIONS = [
   "among", "through", "during", "before", "after", "since", "until",
   "against", "without", "within", "along", "across", "behind",
   "beyond", "near", "past", "out of", "out", "around", "up", "away", "down", "back", "together",
+  "while",
   "out off", "off of", "out from", "as", "because", "than", "like", "—",
 ] as const;
 
