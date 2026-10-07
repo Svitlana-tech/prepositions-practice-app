@@ -15,7 +15,7 @@ export const PREPOSITIONS = [
   "against", "without", "within", "along", "across", "behind",
   "beyond", "near", "past", "out of", "out", "around", "up", "away", "down", "back", "together",
   "while",
-  "out off", "off of", "out from", "as", "because", "than", "like", "—",
+  "out off", "off of", "out from", "as", "because", "because of", "than", "like", "—",
 ] as const;
 
 /** True when the gap opens a sentence: nothing before it, or the text before it ends a
