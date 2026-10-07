@@ -7,6 +7,7 @@ import { recordFirstTry } from "@/lib/mistakes";
 import { forgetSeen, getSeenIds, markSeen } from "@/lib/seenTasks";
 import { PrepositionCardsQuestion } from "@/components/student/PrepositionCards";
 import type { FillInBlankPayload } from "@/components/student/QuestionRenderers";
+import { ReportProblem } from "@/components/student/ReportProblem";
 
 /**
  * Free Flow — endless full-screen practice over every topic, no score. Each draw first
@@ -65,6 +66,8 @@ export function PrepositionCardsDeck() {
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<FillInBlankPayload | null>(null);
   const [onBreak, setOnBreak] = useState(false);
+  // The last card tried on this sentence, sent along with a "Report a problem" note.
+  const [lastWord, setLastWord] = useState<string | null>(null);
 
   // Lock the page itself from scrolling/bouncing while this is open (same fix the drum
   // needed for iOS Safari's own rubber-band bounce swallowing gestures at the body level).
@@ -109,6 +112,7 @@ export function PrepositionCardsDeck() {
     if (!currentId) return;
     markSeen(currentId);
     setPayload(null);
+    setLastWord(null);
     fetch(`/api/tasks/${currentId}`)
       .then((res) => res.json())
       .then((data) => setPayload(data.payload));
@@ -141,6 +145,7 @@ export function PrepositionCardsDeck() {
     gapId: string,
     word: string
   ): Promise<{ correct: boolean; explanation: string | null; explanationIsLong: boolean }> {
+    setLastWord(word);
     const res = await fetch("/api/practice/check", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -200,7 +205,7 @@ export function PrepositionCardsDeck() {
   }
 
   return (
-    <div className="flex h-dvh touch-none flex-col items-center justify-center overscroll-none bg-[#FAF7F2] px-6 pt-[env(safe-area-inset-top)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+    <div className="relative flex h-dvh touch-none flex-col items-center justify-center overscroll-none bg-[#FAF7F2] px-6 pt-[env(safe-area-inset-top)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       {payload && currentId && (
         <PrepositionCardsQuestion
           key={`${currentId}-${drawCount}`}
@@ -212,6 +217,11 @@ export function PrepositionCardsDeck() {
           checkAnswer={(word) => checkAnswer(currentId, payload.gaps[0]?.id ?? "gap1", word)}
           onSolved={handleSolved}
         />
+      )}
+      {payload && currentId && (
+        <div className="absolute inset-x-0 bottom-[env(safe-area-inset-bottom)]">
+          <ReportProblem taskId={currentId} chosen={lastWord} />
+        </div>
       )}
     </div>
   );

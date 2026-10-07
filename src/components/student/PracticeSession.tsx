@@ -10,6 +10,7 @@ import { getMistakeIds, recordFirstTry, removeMistake } from "@/lib/mistakes";
 import { forgetSeen, getSeenIds, markSeen } from "@/lib/seenTasks";
 import { SessionResults, type AnswerRecord } from "@/components/student/SessionResults";
 import { REVEAL_DELAY_MS } from "@/components/student/PrepositionCards";
+import { ReportProblem } from "@/components/student/ReportProblem";
 import {
   FillInBlankQuestion,
   type QuestionPayload as Payload,
@@ -327,6 +328,13 @@ export function PracticeSession({
             </SlimButton>
           </div>
         )}
+      </div>
+
+      <div className="-mt-3">
+        <ReportProblem
+          taskId={taskIds[index]}
+          chosen={String(currentAnswers[payload.gaps[0]?.id ?? "gap1"] ?? "") || null}
+        />
       </div>
     </div>
   );

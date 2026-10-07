@@ -75,6 +75,7 @@ model Task {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   attempts     Attempt[]
+  reports      ProblemReport[]
 }
 
 /// A reusable long-form rule explanation (e.g. "apply for" vs "apply to"), written
@@ -109,4 +110,22 @@ model Attempt {
 
   @@index([studentName])
   @@index([taskId])
+}
+
+/// A student's "Report a problem" note about one question, for the teacher's Reports page.
+/// The sentence and answer are copied at report time, so the note still makes sense after
+/// the question is edited or deleted.
+model ProblemReport {
+  id            String   @id @default(cuid())
+  taskId        String?
+  task          Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  sentence      String
+  correctAnswer String?
+  /// The card the student had picked, if any.
+  chosen        String?
+  comment       String
+  studentName   String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
 }
