@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isTaskType } from "@/lib/taskTypes";
 import { shuffle } from "@/lib/shuffle";
+import { sanitizePayloadForStudent } from "@/lib/sanitize";
+import type { TaskType } from "@/lib/taskSchemas";
 import { ACADEMIC_TOPIC_NAME, FREE_FLOW_TOPIC_NAMES, TOPIC_GROUPS } from "@/lib/topics";
 
 const SESSION_SIZE = 10;
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest) {
       pool.map((t) => t.id),
       SESSION_SIZE
     ).slice(0, SESSION_SIZE);
-    return NextResponse.json({ taskIds, forgetSeenIds, lastOfCycleIds });
+    return NextResponse.json({ taskIds, forgetSeenIds, lastOfCycleIds, tasks: await loadTasks(taskIds) });
   }
 
   // Deal one question per topic per round, topics in random order, until 10 are
@@ -123,5 +125,21 @@ export async function POST(request: NextRequest) {
     : [];
   const mistakes = shuffle(eligible.map((t) => t.id)).slice(0, MIX_MISTAKES);
 
-  return NextResponse.json({ taskIds: shuffle([...picked, ...mistakes]), forgetSeenIds, lastOfCycleIds });
+  const taskIds = shuffle([...picked, ...mistakes]);
+  return NextResponse.json({ taskIds, forgetSeenIds, lastOfCycleIds, tasks: await loadTasks(taskIds) });
+}
+
+/** The session's questions, answer keys stripped, sent along with the ids so the phone
+ *  doesn't ask for each one separately (same fields as GET /api/tasks/[id] uses). */
+async function loadTasks(ids: string[]) {
+  const rows = await prisma.task.findMany({
+    where: { id: { in: ids }, isPublished: true },
+    select: { id: true, type: true, instructions: true, payload: true },
+  });
+  return Object.fromEntries(
+    rows.map((t) => [
+      t.id,
+      { instructions: t.instructions, payload: sanitizePayloadForStudent(t.type as TaskType, t.payload) },
+    ])
+  );
 }

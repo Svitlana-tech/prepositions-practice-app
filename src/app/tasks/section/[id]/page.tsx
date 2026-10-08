@@ -8,6 +8,7 @@ import { FIX_MISTAKES_THEME, getCategoryTheme } from "@/lib/categoryTheme";
 import { ACADEMIC_TOPIC_NAME, TOPIC_GROUPS } from "@/lib/topics";
 import { getMistakeIds } from "@/lib/mistakes";
 import { Spinner } from "@/components/ui/Spinner";
+import { forgetOnlySectionId } from "@/lib/onlySection";
 
 type TopicSummary = { id: string; name: string; count: number };
 
@@ -19,7 +20,6 @@ type TypeSummary = {
   topics: TopicSummary[];
 };
 
-type SectionSummary = { id: string; name: string };
 
 export default function SectionPage() {
   const params = useParams<{ id: string }>();
@@ -38,16 +38,21 @@ export default function SectionPage() {
     }
     setStudentName(name);
     setMistakeCount(getMistakeIds().length);
-    Promise.all([
-      fetch("/api/sections").then((res) => res.json()),
-      fetch(`/api/categories?sectionId=${params.id}`).then((res) => res.json()),
-    ])
-      .then(([sectionsData, categoriesData]) => {
-        const sections: SectionSummary[] = sectionsData.sections ?? [];
-        setMultipleSections(sections.length > 1);
-        setTypes(categoriesData.types ?? []);
+    fetch(`/api/categories?sectionId=${params.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        // A remembered section that's gone (or no longer the only one) is forgotten, and a
+        // missing one sends the student back to /tasks to look the sections up afresh.
+        if (data.sectionCount !== 1) forgetOnlySectionId();
+        if (data.sectionFound === false) {
+          router.replace("/tasks");
+          return;
+        }
+        setMultipleSections(data.sectionCount > 1);
+        setTypes(data.types ?? []);
+        setLoading(false);
       })
-      .finally(() => setLoading(false));
+      .catch(() => setLoading(false));
   }, [router, params.id]);
 
   function handleNotYou() {

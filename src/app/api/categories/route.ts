@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const sectionId = request.nextUrl.searchParams.get("sectionId") || undefined;
   const playableTypes = AVAILABLE_TASK_TYPES.map((t) => t.type);
 
-  const [categories, countsByType] = await Promise.all([
+  const [categories, countsByType, sections] = await Promise.all([
     prisma.category.findMany({
       where: {
         taskType: { in: playableTypes },
@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       },
       _count: { _all: true },
     }),
+    prisma.section.findMany({ where: { isPublished: true }, select: { id: true } }),
   ]);
 
   const totalByType = new Map(countsByType.map((row) => [row.type, row._count._all]));
@@ -55,5 +56,10 @@ export async function GET(request: NextRequest) {
       .map((c) => ({ id: c.id, name: c.name, count: c._count.tasks })),
   })).filter((t) => t.totalCount > 0);
 
-  return NextResponse.json({ types });
+  // Sent along so the section menu needs no separate /api/sections request.
+  return NextResponse.json({
+    types,
+    sectionCount: sections.length,
+    sectionFound: !sectionId || sections.some((s) => s.id === sectionId),
+  });
 }

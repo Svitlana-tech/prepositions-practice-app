@@ -32,6 +32,8 @@ const ANSWER_SETTLE_MS = 450;
  *  without scrolling on as many phones as possible. */
 const QUESTION_GAP = "clamp(24px, 7dvh - 8px, 48px)";
 
+type LoadedTasks = Record<string, { payload: Payload; instructions: string | null }>;
+
 export function PracticeSession({
   taskType = null,
   categoryId = null,
@@ -57,9 +59,7 @@ export function PracticeSession({
   const [taskIds, setTaskIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
-  const [loadedTasks, setLoadedTasks] = useState<
-    Record<string, { payload: Payload; instructions: string | null }>
-  >({});
+  const [loadedTasks, setLoadedTasks] = useState<LoadedTasks>({});
   const requestedRef = useRef<Set<string>>(new Set());
   const [retryTick, setRetryTick] = useState(0);
   const [currentAnswers, setCurrentAnswers] = useState<CurrentAnswers>({});
@@ -108,6 +108,10 @@ export function PracticeSession({
       .then((data) => {
         pendingSeenRef.current.forget = data.forgetSeenIds ?? [];
         pendingSeenRef.current.lastOfCycle = new Set(data.lastOfCycleIds ?? []);
+        // The questions come along with the ids; any missing one is fetched on its own below.
+        const tasks: LoadedTasks = data.tasks ?? {};
+        for (const id of Object.keys(tasks)) requestedRef.current.add(id);
+        setLoadedTasks((loaded) => ({ ...loaded, ...tasks }));
         setTaskIds(data.taskIds);
       })
       .catch((e) => setError(e.message));

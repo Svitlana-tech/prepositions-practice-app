@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { clearStoredStudentName, getStoredStudentName } from "@/lib/studentName";
 import { Card } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
+import { getOnlySectionId, setOnlySectionId } from "@/lib/onlySection";
 
 type SectionSummary = { id: string; name: string };
 
@@ -22,12 +23,18 @@ export default function TasksPage() {
       return;
     }
     setStudentName(name);
+    const known = getOnlySectionId();
+    if (known) {
+      router.replace(`/tasks/section/${known}`);
+      return;
+    }
     fetch("/api/sections")
       .then((res) => res.json())
       .then((data) => {
         const list: SectionSummary[] = data.sections ?? [];
         // Only one section to choose from — skip the picker and go straight in.
         if (list.length === 1) {
+          setOnlySectionId(list[0].id);
           router.replace(`/tasks/section/${list[0].id}`);
           return;
         }
