@@ -89,6 +89,8 @@ export function SessionResults({
         score
       )
     );
+    // Anonymous +1 for the teacher's Usage page; a failure here never bothers the student.
+    fetch("/api/stats/test-finished", { method: "POST" }).catch(() => {});
     // A time only counts when every answer was right.
     if (timing && total > 0 && score === total) {
       setTime(recordSessionTime(timing.recordKey, total, timing.thinkingMs));

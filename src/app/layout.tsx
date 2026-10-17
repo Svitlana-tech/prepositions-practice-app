@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Patrick_Hand } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { RegisterServiceWorker } from "./register-sw";
 
 const geistSans = Geist({
@@ -45,6 +46,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <RegisterServiceWorker />
         {children}
+        {/* Visitor counts for her (no cookies, no personal data) — seen in Vercel, linked from /teacher/usage. */}
+        <Analytics />
       </body>
     </html>
   );

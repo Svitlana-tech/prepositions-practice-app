@@ -129,3 +129,11 @@ model ProblemReport {
 
   @@index([createdAt])
 }
+
+/// Anonymous usage counter for the teacher page: how many tests were finished each day
+/// (Kyiv time). No student names or ids — only the number.
+model DailyStat {
+  /// "2026-10-17"
+  day           String @id
+  testsFinished Int    @default(0)
+}
