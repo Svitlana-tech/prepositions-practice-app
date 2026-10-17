@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { getStoredStudentName } from "@/lib/studentName";
 
 const THANKS_MS = 2500;
 
@@ -45,7 +44,6 @@ export function ReportProblem({ taskId, chosen }: { taskId: string; chosen?: str
           taskId,
           chosen: chosen ?? null,
           comment: text.trim(),
-          studentName: getStoredStudentName(),
         }),
       });
       if (!res.ok) throw new Error();

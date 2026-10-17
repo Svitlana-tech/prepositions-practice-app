@@ -12,7 +12,6 @@ type Report = {
   correctAnswer: string | null;
   chosen: string | null;
   comment: string;
-  studentName: string | null;
   createdAt: string;
 };
 
@@ -71,7 +70,6 @@ export default function ReportsPage() {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
-                {r.studentName ? ` · ${r.studentName}` : ""}
               </div>
               <p className="text-gray-900">
                 <Sentence text={r.sentence} answer={r.correctAnswer} />

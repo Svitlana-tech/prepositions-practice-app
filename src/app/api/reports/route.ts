@@ -10,10 +10,6 @@ export async function POST(request: NextRequest) {
   const taskId = typeof body?.taskId === "string" ? body.taskId : null;
   const comment = typeof body?.comment === "string" ? body.comment.trim().slice(0, MAX_COMMENT) : "";
   const chosen = typeof body?.chosen === "string" && body.chosen ? body.chosen.slice(0, 40) : null;
-  const studentName =
-    typeof body?.studentName === "string" && body.studentName.trim()
-      ? body.studentName.trim().slice(0, 60)
-      : null;
 
   if (!taskId || !comment) {
     return NextResponse.json({ error: "Write what's wrong first." }, { status: 400 });
@@ -32,7 +28,7 @@ export async function POST(request: NextRequest) {
       correctAnswer: payload.gaps?.[0]?.correctAnswer ?? null,
       chosen,
       comment,
-      studentName,
+      // No student name: reports stay anonymous (children's personal data).
     },
   });
 
