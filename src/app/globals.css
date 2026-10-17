@@ -45,6 +45,15 @@ body {
   animation: menu-rise 0.35s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
   animation-delay: calc(var(--i, 0) * 250ms);
 }
+/* Results: a new time record pops in. */
+@keyframes record-pop {
+  0% { opacity: 0; transform: scale(0.8); }
+  60% { opacity: 1; transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.record-pop {
+  animation: record-pop 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) 0.3s backwards;
+}
 @media (prefers-reduced-motion: reduce) {
-  .menu-enter, .menu-bolt, .answer-button-in { animation: none; }
+  .menu-enter, .menu-bolt, .answer-button-in, .record-pop { animation: none; }
 }

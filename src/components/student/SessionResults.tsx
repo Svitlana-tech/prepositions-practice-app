@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { capitalizeForGap } from "@/lib/prepositions";
-import { recordFinishedSession, type SessionProgress } from "@/lib/progress";
+import { recordFinishedSession, recordSessionTime, type SessionProgress, type TimeResult } from "@/lib/progress";
 
 /** One answered question of the session, as the results screen needs it. */
 export type AnswerRecord = {
@@ -22,6 +22,8 @@ const RIGHT = "#22C55E";
 const WRONG = "#EF4444";
 const BLUE = { bg: "#E3F2FD", accent: "#1565C0" };
 const SAND = { bg: "#FDF6EC", accent: "#B45309" };
+/** The record card wears Daily Mix's amber. */
+const AMBER = { bg: "#FEF3C7", accent: "#B45309" };
 /** The recap sentences look like the examples in explanations (blue, hand-printed); the
  *  right preposition in them is a calm dark green that stands apart from the blue. */
 const EXAMPLE_BLUE = "#1E4FA8";
@@ -46,8 +48,25 @@ function fullSentence(text: string, answer: string): { before: string; answer: s
   return { before, answer: capitalizeForGap(answer, before), after };
 }
 
+/** 38 → "38 sec", 75 → "1 min 15 sec". */
+function formatSeconds(seconds: number): string {
+  if (seconds < 60) return `${seconds} sec`;
+  const min = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return rest === 0 ? `${min} min` : `${min} min ${rest} sec`;
+}
+
 /** The end-of-session screen: result, rewards, the sentences to remember, what next. */
-export function SessionResults({ records, onRepeat }: { records: AnswerRecord[]; onRepeat: () => void }) {
+export function SessionResults({
+  records,
+  onRepeat,
+  timing = null,
+}: {
+  records: AnswerRecord[];
+  onRepeat: () => void;
+  /** For "beat yourself" time records; null where records don't apply (Fix Mistakes). */
+  timing?: { recordKey: string; thinkingMs: number } | null;
+}) {
   const score = records.filter((r) => r.correct).length;
   const total = records.length;
   const mistakes = records.filter((r) => !r.correct);
@@ -56,6 +75,7 @@ export function SessionResults({ records, onRepeat }: { records: AnswerRecord[];
   // against the effect re-running (e.g. React's dev-mode double invoke).
   const recorded = useRef(false);
   const [progress, setProgress] = useState<SessionProgress | null>(null);
+  const [time, setTime] = useState<TimeResult | null>(null);
   useEffect(() => {
     if (recorded.current) return;
     recorded.current = true;
@@ -65,7 +85,11 @@ export function SessionResults({ records, onRepeat }: { records: AnswerRecord[];
         score
       )
     );
-  }, [records, score]);
+    // A time only counts when every answer was right.
+    if (timing && total > 0 && score === total) {
+      setTime(recordSessionTime(timing.recordKey, total, timing.thinkingMs));
+    }
+  }, [records, score, total, timing]);
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
@@ -107,6 +131,37 @@ export function SessionResults({ records, onRepeat }: { records: AnswerRecord[];
           >
             ⭐ +{progress.pointsEarned} pts
           </span>
+        </div>
+      )}
+
+      {/* 3b. Beat yourself: the time of a flawless session against the best one so far */}
+      {time && (
+        <div
+          className={`rounded-[14px] px-4 py-3 text-center ${time.isNewRecord ? "record-pop" : ""}`}
+          style={{ background: AMBER.bg, color: AMBER.accent }}
+        >
+          {time.isNewRecord ? (
+            <>
+              <div className="text-lg font-bold">
+                🏆 {time.previousBest === null ? "Your first record!" : "New record!"}
+              </div>
+              <div className="text-sm font-bold">
+                {total} sentences in {formatSeconds(time.seconds)}
+                {time.previousBest !== null && <> · was {formatSeconds(time.previousBest)}</>}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-lg font-bold">
+                ⏱ {total} sentences in {formatSeconds(time.seconds)}
+              </div>
+              <div className="text-sm font-bold">
+                {time.seconds === time.previousBest
+                  ? "Same as your record!"
+                  : `Your record: ${formatSeconds(time.previousBest ?? 0)}`}
+              </div>
+            </>
+          )}
         </div>
       )}
 

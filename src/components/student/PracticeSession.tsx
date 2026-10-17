@@ -70,6 +70,10 @@ export function PracticeSession({
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [finished, setFinished] = useState(false);
   const nextRef = useRef<HTMLDivElement>(null);
+  // "Beat yourself" timer: only the thinking time counts — from a question appearing to
+  // the Check tap. Animations, explanations and Next are left out.
+  const questionShownAtRef = useRef<number | null>(null);
+  const [thinkingMs, setThinkingMs] = useState(0);
   // The session's changes to the "seen" list, held back until the set is finished: a
   // session abandoned halfway (window closed, Back pressed) leaves the list untouched, so
   // its sentences go back into the pool. `lastOfCycle` tasks close a topic's previous
@@ -199,6 +203,12 @@ export function PracticeSession({
   const payload = current?.payload ?? null;
   const instructions = current?.instructions ?? null;
 
+  // The clock starts once the question is actually on screen (not while it's loading).
+  const questionReady = payload !== null;
+  useEffect(() => {
+    if (questionReady && questionShownAtRef.current === null) questionShownAtRef.current = performance.now();
+  }, [index, questionReady]);
+
   const allGapsFilled =
     payload !== null &&
     payload.gaps.every((g) => currentAnswers[g.id] !== undefined && currentAnswers[g.id] !== "");
@@ -207,6 +217,12 @@ export function PracticeSession({
     if (!taskIds || !allGapsFilled || checking) return;
     const taskId = taskIds[index];
     const questionIndex = index;
+    // The tap stops this question's clock (the server's answer time doesn't count).
+    if (questionShownAtRef.current !== null) {
+      const elapsed = performance.now() - questionShownAtRef.current;
+      setThinkingMs((ms) => ms + elapsed);
+      questionShownAtRef.current = null;
+    }
     // Check stays on screen while the answer is on its way to the server — on a slow phone
     // connection a second tap used to send it twice and fill two progress segments.
     setChecking(true);
@@ -268,7 +284,15 @@ export function PracticeSession({
   }
 
   if (finished) {
-    return <SessionResults records={records} onRepeat={onRepeat} />;
+    // Fix Mistakes repeats the same sentences, so a time record would mean nothing there.
+    const recordKey = presetTaskIds ? null : categoryId ? `topic:${categoryId}` : group ? `group:${group}` : "mix";
+    return (
+      <SessionResults
+        records={records}
+        onRepeat={onRepeat}
+        timing={recordKey ? { recordKey, thinkingMs } : null}
+      />
+    );
   }
 
   if (!taskIds || !payload) {

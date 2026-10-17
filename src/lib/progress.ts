@@ -45,3 +45,26 @@ export function recordFinishedSession(taskIds: string[], correctCount: number): 
 
   return { streakDays: days, firstToday, pointsEarned, totalPoints };
 }
+
+export type TimeResult = {
+  /** This session's thinking time, in whole seconds. */
+  seconds: number;
+  /** The record before this session, or null when this is the first one. */
+  previousBest: number | null;
+  isNewRecord: boolean;
+};
+
+/**
+ * "Beat yourself": the best time for a flawless session, kept per kind of session
+ * (`recordKey`) and per number of questions — a Daily Mix with two mistakes mixed in has
+ * 12 questions and isn't compared with a plain 10. Only called for perfect sessions.
+ */
+export function recordSessionTime(recordKey: string, questionCount: number, thinkingMs: number): TimeResult {
+  const seconds = Math.max(1, Math.round(thinkingMs / 1000));
+  const key = `${recordKey}:${questionCount}`;
+  const bests = readStudentValue<Record<string, number>>("bestTimes", {});
+  const previousBest = typeof bests[key] === "number" ? bests[key] : null;
+  const isNewRecord = previousBest === null || seconds < previousBest;
+  if (isNewRecord) writeStudentValue("bestTimes", { ...bests, [key]: seconds });
+  return { seconds, previousBest, isNewRecord };
+}
