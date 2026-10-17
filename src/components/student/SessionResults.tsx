@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { capitalizeForGap } from "@/lib/prepositions";
+import { getLevel } from "@/lib/levels";
 import { recordFinishedSession, recordSessionTime, type SessionProgress, type TimeResult } from "@/lib/progress";
 
 /** One answered question of the session, as the results screen needs it. */
@@ -76,6 +77,9 @@ export function SessionResults({
   const recorded = useRef(false);
   const [progress, setProgress] = useState<SessionProgress | null>(null);
   const [time, setTime] = useState<TimeResult | null>(null);
+  const before = progress ? getLevel(progress.totalPoints - progress.pointsEarned) : null;
+  const after = progress ? getLevel(progress.totalPoints) : null;
+  const newLevel = before && after && after.index > before.index ? after.name : null;
   useEffect(() => {
     if (recorded.current) return;
     recorded.current = true;
@@ -131,6 +135,17 @@ export function SessionResults({
           >
             ⭐ +{progress.pointsEarned} pts
           </span>
+        </div>
+      )}
+
+      {/* 3a. A new title earned with this session's points */}
+      {newLevel && (
+        <div
+          className="record-pop rounded-[14px] px-4 py-3 text-center"
+          style={{ background: BLUE.bg, color: BLUE.accent }}
+        >
+          <div className="text-sm font-bold">🎉 New title!</div>
+          <div className="text-2xl font-bold">🧭 {newLevel}</div>
         </div>
       )}
 

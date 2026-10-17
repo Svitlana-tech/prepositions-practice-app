@@ -9,6 +9,8 @@ import { ACADEMIC_TOPIC_NAME, TOPIC_GROUPS } from "@/lib/topics";
 import { getMistakeIds } from "@/lib/mistakes";
 import { Spinner } from "@/components/ui/Spinner";
 import { forgetOnlySectionId } from "@/lib/onlySection";
+import { getLevel, type LevelInfo } from "@/lib/levels";
+import { readStudentValue } from "@/lib/studentStorage";
 
 type TopicSummary = { id: string; name: string; count: number };
 
@@ -29,6 +31,7 @@ export default function SectionPage() {
   const [types, setTypes] = useState<TypeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [mistakeCount, setMistakeCount] = useState(0);
+  const [level, setLevel] = useState<LevelInfo | null>(null);
 
   useEffect(() => {
     const name = getStoredStudentName();
@@ -38,6 +41,7 @@ export default function SectionPage() {
     }
     setStudentName(name);
     setMistakeCount(getMistakeIds().length);
+    setLevel(getLevel(readStudentValue<number>("points", 0)));
     fetch(`/api/categories?sectionId=${params.id}`)
       .then((res) => res.json())
       .then((data) => {
@@ -74,11 +78,14 @@ export default function SectionPage() {
           ← Back to sections
         </Link>
       )}
-      <div className="mb-4 flex items-center justify-between px-1">
-        <h1 className="text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
-        <button onClick={handleNotYou} className="text-sm text-blue-600 hover:underline">
-          Not me
-        </button>
+      <div className="mb-4 px-1">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
+          <button onClick={handleNotYou} className="text-sm text-blue-600 hover:underline">
+            Not me
+          </button>
+        </div>
+        {level && <LevelLine level={level} />}
       </div>
 
       {loading && <Spinner />}
@@ -232,5 +239,27 @@ function MenuRow({
         <span className="text-[22px] text-gray-400">›</span>
       </div>
     </Link>
+  );
+}
+
+/** The student's title under the greeting, with a thin bar towards the next one. */
+function LevelLine({ level }: { level: LevelInfo }) {
+  return (
+    <div className="mt-1.5">
+      <div className="flex items-baseline justify-between gap-2 text-sm">
+        <span className="font-bold" style={{ color: "#1565C0" }}>
+          🧭 {level.name}
+        </span>
+        <span className="text-[12.5px] text-gray-500">
+          {level.next ? `${level.next.pointsLeft} pts to ${level.next.name}` : "The top title!"}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full" style={{ background: "#E3F2FD" }}>
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${Math.round(level.progress * 100)}%`, background: "#1565C0" }}
+        />
+      </div>
+    </div>
   );
 }
