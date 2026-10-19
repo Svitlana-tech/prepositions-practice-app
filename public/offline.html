@@ -1,28 +1,74 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Нет соединения</title>
+    <title>No internet · Preposition Master</title>
+    <!-- Shown by sw.js when there's no connection, so everything is inline: no fonts or files to fetch. -->
     <style>
       body {
-        font-family: system-ui, sans-serif;
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 0 24px 40px;
+        background: #faf7f2;
+        color: #2b2d42;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        text-align: center;
+      }
+      .grow { flex-grow: 1; }
+      .cards { display: flex; gap: 6px; }
+      .card {
+        width: 54px;
+        height: 72px;
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 3px 10px rgba(21, 101, 192, 0.14);
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 100vh;
-        margin: 0;
-        background: #f9fafb;
-        color: #111827;
-        text-align: center;
-        padding: 1.5rem;
+        font-weight: 700;
+        font-size: 20px;
+        color: #9aa8bd;
+      }
+      .left { transform: rotate(-12deg) translateY(6px); }
+      .right { transform: rotate(12deg) translateY(6px); }
+      h1 { margin: 32px 0 0; font-size: 26px; }
+      p { margin: 10px 0 0; font-size: 16px; line-height: 1.5; color: #5c6378; }
+      .safe {
+        margin-top: 18px;
+        font-family: "Segoe Print", "Comic Sans MS", cursive;
+        font-size: 18px;
+        color: #1e4fa8;
+      }
+      button {
+        width: 100%;
+        max-width: 360px;
+        border: 0;
+        border-radius: 14px;
+        background: #1565c0;
+        color: #fff;
+        padding: 15px;
+        font: inherit;
+        font-size: 16px;
+        font-weight: 700;
       }
     </style>
   </head>
   <body>
-    <div>
-      <h1>Нет подключения к интернету</h1>
-      <p>Проверь соединение и попробуй снова.</p>
+    <div class="grow"></div>
+    <div class="cards" aria-hidden="true">
+      <div class="card left">in</div>
+      <div class="card">off</div>
+      <div class="card right">line</div>
     </div>
+    <h1>No internet</h1>
+    <p>The cards need the internet to load.<br />Check your Wi-Fi or mobile data.</p>
+    <p class="safe">Your points are safe on this phone.</p>
+    <div class="grow"></div>
+    <button type="button" onclick="location.reload()">Try again</button>
   </body>
 </html>

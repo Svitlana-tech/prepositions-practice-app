@@ -13,6 +13,7 @@ import { getLevel, type LevelInfo } from "@/lib/levels";
 import { readStudentValue } from "@/lib/studentStorage";
 import { getSecretCode, syncOnOpen } from "@/lib/progressSync";
 import { MyCodeSheet } from "@/components/student/SecretCode";
+import { InfoLinks } from "@/components/student/InfoPage";
 
 type TopicSummary = { id: string; name: string; count: number };
 
@@ -219,6 +220,8 @@ export default function SectionPage() {
           </div>
         );
       })}
+
+      {!loading && <InfoLinks />}
     </div>
   );
 }
