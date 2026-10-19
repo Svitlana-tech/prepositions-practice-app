@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { setStoredStudentName } from "@/lib/studentName";
+import { NICKNAME_MAX, setStoredStudentName } from "@/lib/studentName";
 import { setOnboardingSeen } from "@/lib/onboarding";
 import { adoptSave, findSave, type SavedProgress } from "@/lib/progressSync";
 
@@ -111,6 +111,7 @@ export default function RestorePage() {
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 placeholder="Your nickname"
+                maxLength={NICKNAME_MAX}
                 autoComplete="off"
                 autoFocus
                 className={INPUT}

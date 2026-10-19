@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { setStoredStudentName } from "@/lib/studentName";
+import { NICKNAME_MAX, setStoredStudentName } from "@/lib/studentName";
 
 /** The name field and the start button; the page around it provides the layout. */
 export function NameCaptureForm() {
@@ -30,6 +30,7 @@ export function NameCaptureForm() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your nickname"
+          maxLength={NICKNAME_MAX}
           autoComplete="off"
           autoFocus
           className="w-full rounded-[14px] border-[1.5px] bg-white px-4 py-3.5 text-base outline-none focus:border-[#1565C0]"

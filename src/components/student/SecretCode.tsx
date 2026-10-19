@@ -93,7 +93,7 @@ export function CodeOffer({ totalPoints }: { totalPoints: number }) {
             <div className="grid h-10 w-10 flex-none place-items-center rounded-full bg-white text-xl">🔑</div>
             <div>
               <div className="text-[17px] font-bold" style={{ color: AMBER.ink }}>
-                Keep your {totalPoints} points forever
+                Keep your {totalPoints.toLocaleString("en-GB")} points forever
               </div>
               <div className="text-sm leading-snug" style={{ color: AMBER.ink }}>
                 Get a secret code. With it, your points and mistakes move to any phone.

@@ -12,7 +12,8 @@ const FEATURES = [
 /** First launch only: what the app is, then on to the name screen. */
 export function WelcomeScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col justify-between gap-6 px-5 pb-8">
+    // Tighter on very short phones (320×568), so the whole screen fits without scrolling.
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col justify-between gap-6 px-5 pb-8 [@media(max-height:600px)]:gap-4 [@media(max-height:600px)]:pb-5">
       <WelcomeHero subtitle="Prepositions in 2 minutes a day" />
 
       <div className="flex flex-col gap-2.5">

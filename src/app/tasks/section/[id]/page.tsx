@@ -91,7 +91,7 @@ export default function SectionPage() {
       )}
       <div className="mb-4 px-1">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="min-w-0 truncate text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
+          <h1 className="min-w-0 text-2xl font-semibold [overflow-wrap:anywhere] text-gray-900">Hi, {studentName}!</h1>
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
@@ -284,7 +284,7 @@ function LevelLine({ level }: { level: LevelInfo }) {
           🧭 {level.name}
         </span>
         <span className="flex items-baseline gap-2 text-[12.5px] text-gray-500">
-          {level.next ? `${level.next.pointsLeft} pts to ${level.next.name}` : "The top title!"}
+          {level.next ? `${level.next.pointsLeft.toLocaleString("en-GB")} pts to ${level.next.name}` : "The top title!"}
           <span className="text-lg leading-none" style={{ color: "#1565C0" }}>
             ›
           </span>
