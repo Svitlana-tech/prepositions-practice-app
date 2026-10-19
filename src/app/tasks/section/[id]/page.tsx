@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { clearStoredStudentName, getStoredStudentName } from "@/lib/studentName";
 import { FIX_MISTAKES_THEME, getCategoryTheme } from "@/lib/categoryTheme";
-import { ACADEMIC_TOPIC_NAME, TOPIC_GROUPS } from "@/lib/topics";
+import { ACADEMIC_TOPIC_NAME, TOPIC_GROUPS, topicMenuName } from "@/lib/topics";
 import { getMistakeIds } from "@/lib/mistakes";
 import { Spinner } from "@/components/ui/Spinner";
 import { forgetOnlySectionId } from "@/lib/onlySection";
@@ -176,7 +176,7 @@ export default function SectionPage() {
                 <MenuRow
                   href={hrefFor(academic)}
                   icon={getCategoryTheme(academic.name).icon}
-                  title="Academic & Exams"
+                  title={topicMenuName(academic.name)}
                   hint="IELTS / Formal Writing"
                   bg={TOPICS_BG}
                   order={nextOrder()}
@@ -270,16 +270,24 @@ function MenuRow({
   );
 }
 
-/** The student's title under the greeting, with a thin bar towards the next one. */
+/** The student's title under the greeting, with a thin bar towards the next one — a light
+ *  card with an arrow that opens My Progress (her pick "A", 2026-10-19). */
 function LevelLine({ level }: { level: LevelInfo }) {
   return (
-    <div className="mt-1.5">
+    <Link
+      href="/progress"
+      className="mt-2 block rounded-xl border-[1.5px] bg-white px-3 py-2.5 transition-transform active:scale-[0.98]"
+      style={{ borderColor: "#BBDEFB" }}
+    >
       <div className="flex items-baseline justify-between gap-2 text-sm">
         <span className="font-bold" style={{ color: "#1565C0" }}>
           🧭 {level.name}
         </span>
-        <span className="text-[12.5px] text-gray-500">
+        <span className="flex items-baseline gap-2 text-[12.5px] text-gray-500">
           {level.next ? `${level.next.pointsLeft} pts to ${level.next.name}` : "The top title!"}
+          <span className="text-lg leading-none" style={{ color: "#1565C0" }}>
+            ›
+          </span>
         </span>
       </div>
       <div className="mt-1 h-1.5 overflow-hidden rounded-full" style={{ background: "#E3F2FD" }}>
@@ -288,6 +296,6 @@ function LevelLine({ level }: { level: LevelInfo }) {
           style={{ width: `${Math.round(level.progress * 100)}%`, background: "#1565C0" }}
         />
       </div>
-    </div>
+    </Link>
   );
 }

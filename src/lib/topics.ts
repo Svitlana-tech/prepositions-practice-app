@@ -25,3 +25,8 @@ export function freeFlowWeight(name: string): number {
 export const TOPIC_GROUPS: Record<string, { name: string; topics: string[] }> = {
   everyday: { name: "Everyday Prepositions", topics: ["Essential", "Dependent", "Fixed Expressions"] },
 };
+
+/** The name a topic wears on the student menu and progress screen, where it differs from the DB. */
+export function topicMenuName(name: string): string {
+  return name === ACADEMIC_TOPIC_NAME ? "Academic & Exams" : name;
+}
