@@ -56,8 +56,8 @@ export type TimeResult = {
 
 /**
  * "Beat yourself": the best time for a flawless session, kept per kind of session
- * (`recordKey`) and per number of questions — a Daily Mix with two mistakes mixed in has
- * 12 questions and isn't compared with a plain 10. Only called for perfect sessions.
+ * (`recordKey`) and per number of questions — a topic with fewer than 10 sentences gives a
+ * shorter session, which isn't compared with a full one. Only called for perfect sessions.
  */
 export function recordSessionTime(recordKey: string, questionCount: number, thinkingMs: number): TimeResult {
   const seconds = Math.max(1, Math.round(thinkingMs / 1000));

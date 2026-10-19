@@ -8,8 +8,8 @@ import { ACADEMIC_TOPIC_NAME, FREE_FLOW_TOPIC_NAMES, TOPIC_GROUPS } from "@/lib/
 
 const SESSION_SIZE = 10;
 
-/** Daily Mix: on top of SESSION_SIZE questions spread evenly over the topics,
- *  up to this many of the student's own mistakes (sent by the client), from any topic. */
+/** Daily Mix: up to this many of the SESSION_SIZE questions are the student's own mistakes
+ *  (sent by the client), from any topic — the session stays at SESSION_SIZE (her rule, 2026-10-19). */
 const MIX_MISTAKES = 2;
 /** Topics practiced only on their own, never pulled into the mix's topic questions. */
 const MIX_EXCLUDED_TOPIC_NAMES = [ACADEMIC_TOPIC_NAME, ...FREE_FLOW_TOPIC_NAMES];
@@ -17,9 +17,9 @@ const MIX_EXCLUDED_TOPIC_NAMES = [ACADEMIC_TOPIC_NAME, ...FREE_FLOW_TOPIC_NAMES]
 /**
  * Public: build one practice session of a question type. With `categoryId` it's up
  * to 10 random questions from that topic. Without it, it's the Daily Mix:
- * 10 random questions spread evenly over the topics (scoped to `sectionId` when
- * given, minus MIX_EXCLUDED_TOPIC_NAMES), plus up to MIX_MISTAKES ids picked from
- * `mistakeTaskIds` — the student's Fix Mistakes pool, which only lives in their browser.
+ * 10 questions: up to MIX_MISTAKES ids picked from `mistakeTaskIds` — the student's
+ * Fix Mistakes pool, which only lives in their browser — and the rest random questions
+ * spread evenly over the topics (scoped to `sectionId` when given, minus MIX_EXCLUDED_TOPIC_NAMES).
  * With `group` (a TOPIC_GROUPS key) it's 10 questions spread evenly over that group's
  * topics, dealt like the mix but without mistakes.
  *
@@ -91,26 +91,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ taskIds, forgetSeenIds, lastOfCycleIds, tasks: await loadTasks(taskIds) });
   }
 
-  // Deal one question per topic per round, topics in random order, until 10 are
-  // drawn — so four topics give 2–3 each, and a small topic that runs out just
-  // leaves its turn to the others.
-  const byTopic = new Map<string | null, string[]>();
-  for (const t of pool) {
-    byTopic.set(t.categoryId, [...(byTopic.get(t.categoryId) ?? []), t.id]);
-  }
-  const perTopic = Math.ceil(SESSION_SIZE / byTopic.size);
-  const queues = shuffle([...byTopic.values()].map((ids) => unseenFirst(ids, perTopic)));
-  const picked: string[] = [];
-  while (picked.length < SESSION_SIZE && queues.some((q) => q.length > 0)) {
-    for (const q of queues) {
-      const id = q.shift();
-      if (id && picked.length < SESSION_SIZE) picked.push(id);
-    }
-  }
-
   // Mistakes can come from any topic, excluded ones included — only still-published
-  // tasks of this type (and section) not already drawn above.
-  const candidates = group ? [] : mistakeTaskIds.filter((id) => !picked.includes(id));
+  // tasks of this type (and section). They're picked first; new questions fill the rest.
+  const candidates = group ? [] : mistakeTaskIds;
   const eligible = candidates.length
     ? await prisma.task.findMany({
         where: {
@@ -124,6 +107,24 @@ export async function POST(request: NextRequest) {
       })
     : [];
   const mistakes = shuffle(eligible.map((t) => t.id)).slice(0, MIX_MISTAKES);
+
+  // Deal one question per topic per round, topics in random order, until the session
+  // is full — so four topics give 2–3 each, and a small topic that runs out just
+  // leaves its turn to the others.
+  const newCount = SESSION_SIZE - mistakes.length;
+  const byTopic = new Map<string | null, string[]>();
+  for (const t of pool.filter((t) => !mistakes.includes(t.id))) {
+    byTopic.set(t.categoryId, [...(byTopic.get(t.categoryId) ?? []), t.id]);
+  }
+  const perTopic = Math.ceil(newCount / byTopic.size);
+  const queues = shuffle([...byTopic.values()].map((ids) => unseenFirst(ids, perTopic)));
+  const picked: string[] = [];
+  while (picked.length < newCount && queues.some((q) => q.length > 0)) {
+    for (const q of queues) {
+      const id = q.shift();
+      if (id && picked.length < newCount) picked.push(id);
+    }
+  }
 
   const taskIds = shuffle([...picked, ...mistakes]);
   return NextResponse.json({ taskIds, forgetSeenIds, lastOfCycleIds, tasks: await loadTasks(taskIds) });
