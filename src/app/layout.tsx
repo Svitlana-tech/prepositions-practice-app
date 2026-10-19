@@ -35,6 +35,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#faf7f2",
+  // Light only: stops browsers in night mode (Samsung Internet, Chrome's auto-dark) from
+  // darkening the app themselves — that gave a friend black buttons on a black screen.
+  colorScheme: "only light",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

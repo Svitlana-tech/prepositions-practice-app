@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  /* The app has one, light look — browsers must not darken it on their own (see layout.tsx). */
+  color-scheme: only light;
   --background: #faf7f2;
   --foreground: #171717;
 }
