@@ -1,10 +1,11 @@
 import { getStoredStudentName } from "@/lib/studentName";
+import { noteStudentChange } from "@/lib/progressSync";
 
 /**
- * Per-student values kept in this browser only (there are no student accounts — same
- * as the stored name). Keyed by name so kids sharing one device each keep their own.
- * Every read/write tolerates blocked storage (private mode etc.) — nothing persists
- * then, but nothing breaks either.
+ * Per-student values kept in this browser (keyed by name so kids sharing one device each keep
+ * their own). A student with a secret code also gets them copied to the server — see
+ * progressSync. Every read/write tolerates blocked storage (private mode etc.) — nothing
+ * persists then, but nothing breaks either.
  */
 function key(name: string): string | null {
   const student = getStoredStudentName();
@@ -21,13 +22,22 @@ export function readStudentValue<T>(name: string, fallback: T): T {
   }
 }
 
-export function writeStudentValue<T>(name: string, value: T): void {
+/** Writes without telling progressSync — for progressSync itself and device-only values.
+ *  null removes the value. */
+export function storeStudentValue<T>(name: string, value: T | null): void {
   try {
     const k = key(name);
-    if (k) window.localStorage.setItem(k, JSON.stringify(value));
+    if (!k) return;
+    if (value === null) window.localStorage.removeItem(k);
+    else window.localStorage.setItem(k, JSON.stringify(value));
   } catch {
     // Storage blocked — just don't persist.
   }
+}
+
+export function writeStudentValue<T>(name: string, value: T): void {
+  storeStudentValue(name, value);
+  noteStudentChange(name);
 }
 
 export function readStudentIds(name: string): string[] {

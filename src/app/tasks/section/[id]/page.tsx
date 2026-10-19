@@ -11,6 +11,8 @@ import { Spinner } from "@/components/ui/Spinner";
 import { forgetOnlySectionId } from "@/lib/onlySection";
 import { getLevel, type LevelInfo } from "@/lib/levels";
 import { readStudentValue } from "@/lib/studentStorage";
+import { getSecretCode, syncOnOpen } from "@/lib/progressSync";
+import { MyCodeSheet } from "@/components/student/SecretCode";
 
 type TopicSummary = { id: string; name: string; count: number };
 
@@ -32,6 +34,8 @@ export default function SectionPage() {
   const [loading, setLoading] = useState(true);
   const [mistakeCount, setMistakeCount] = useState(0);
   const [level, setLevel] = useState<LevelInfo | null>(null);
+  const [code, setCode] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     const name = getStoredStudentName();
@@ -40,8 +44,14 @@ export default function SectionPage() {
       return;
     }
     setStudentName(name);
-    setMistakeCount(getMistakeIds().length);
-    setLevel(getLevel(readStudentValue<number>("points", 0)));
+    const showProgress = () => {
+      setMistakeCount(getMistakeIds().length);
+      setLevel(getLevel(readStudentValue<number>("points", 0)));
+      setCode(getSecretCode());
+    };
+    showProgress();
+    // Progress made on another phone with the same secret code comes in here.
+    syncOnOpen().then(showProgress);
     fetch(`/api/categories?sectionId=${params.id}`)
       .then((res) => res.json())
       .then((data) => {
@@ -79,14 +89,29 @@ export default function SectionPage() {
         </Link>
       )}
       <div className="mb-4 px-1">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
-          <button onClick={handleNotYou} className="text-sm text-blue-600 hover:underline">
-            Not me
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="min-w-0 truncate text-2xl font-semibold text-gray-900">Hi, {studentName}!</h1>
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="flex-none rounded-full border-[1.5px] px-3 py-1.5 text-sm font-semibold"
+            style={{ background: "#FEF3C7", borderColor: "#F5D08A", color: "#92400E" }}
+          >
+            🔑 My code
           </button>
         </div>
         {level && <LevelLine level={level} />}
       </div>
+
+      {sheetOpen && (
+        <MyCodeSheet
+          code={code}
+          onCode={setCode}
+          onSwitchPlayer={handleNotYou}
+          onDeleted={handleNotYou}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
 
       {loading && <Spinner />}
       {isEmpty && <p className="px-1 text-gray-500">Nothing here yet — check back later.</p>}

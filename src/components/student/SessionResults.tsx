@@ -5,6 +5,8 @@ import Link from "next/link";
 import { capitalizeForGap } from "@/lib/prepositions";
 import { getLevel } from "@/lib/levels";
 import { recordFinishedSession, recordSessionTime, type SessionProgress, type TimeResult } from "@/lib/progress";
+import { shouldOfferCode } from "@/lib/progressSync";
+import { CodeOffer } from "@/components/student/SecretCode";
 
 /** One answered question of the session, as the results screen needs it. */
 export type AnswerRecord = {
@@ -77,18 +79,19 @@ export function SessionResults({
   const recorded = useRef(false);
   const [progress, setProgress] = useState<SessionProgress | null>(null);
   const [time, setTime] = useState<TimeResult | null>(null);
+  const [offerCode, setOfferCode] = useState(false);
   const before = progress ? getLevel(progress.totalPoints - progress.pointsEarned) : null;
   const after = progress ? getLevel(progress.totalPoints) : null;
   const newLevel = before && after && after.index > before.index ? after.name : null;
   useEffect(() => {
     if (recorded.current) return;
     recorded.current = true;
-    setProgress(
-      recordFinishedSession(
-        records.map((r) => r.taskId),
-        score
-      )
+    const finished = recordFinishedSession(
+      records.map((r) => r.taskId),
+      score
     );
+    setProgress(finished);
+    setOfferCode(finished.totalPoints > 0 && shouldOfferCode());
     // Anonymous +1 for the teacher's Usage page; a failure here never bothers the student.
     fetch("/api/stats/test-finished", { method: "POST" }).catch(() => {});
     // A time only counts when every answer was right.
@@ -181,6 +184,9 @@ export function SessionResults({
           )}
         </div>
       )}
+
+      {/* 3c. No secret code yet: offer one to keep the points (her pick "2B") */}
+      {offerCode && progress && <CodeOffer totalPoints={progress.totalPoints} />}
 
       {/* 4. The sentences to remember, set a little apart from the result above, each
           written out in full with the right preposition in green. */}

@@ -137,3 +137,14 @@ model DailyStat {
   day           String @id
   testsFinished Int    @default(0)
 }
+
+/// A student's progress saved under their secret code ("BLUE-TIGER-4821"), so it can move to
+/// another phone. Anonymous on purpose: no name, nickname or contact — and not even the code
+/// itself, only its SHA-256 hash, so the table alone can't be used to log in as anyone.
+model ProgressSave {
+  codeHash  String   @id
+  /// { v, updatedAt, values: { points, streak, mastered, bestTimes, mistakes, seen } }
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
