@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { createSecretCode, deleteMyProgress, skipCodeOffer } from "@/lib/progressSync";
+import { createSecretCode, deleteMyProgress, skipCodeOffer, TooManyTriesError, TOO_MANY_TRIES } from "@/lib/progressSync";
 
 /** The code wears Daily Mix's amber and the explanations' hand-printed blue. */
 const AMBER = { bg: "#FEF3C7", border: "#F59E0B", accent: "#B45309", ink: "#92400E" };
@@ -59,8 +59,8 @@ export function CodeOffer({ totalPoints }: { totalPoints: number }) {
     setError(null);
     try {
       setCode(await createSecretCode());
-    } catch {
-      setError("Could not get a code. Check your internet and try again.");
+    } catch (e) {
+      setError(e instanceof TooManyTriesError ? TOO_MANY_TRIES : "Could not get a code. Check your internet and try again.");
     } finally {
       setBusy(false);
     }
@@ -155,8 +155,8 @@ export function MyCodeSheet({
     setError(null);
     try {
       onCode(await createSecretCode());
-    } catch {
-      setError("Could not get a code. Check your internet and try again.");
+    } catch (e) {
+      setError(e instanceof TooManyTriesError ? TOO_MANY_TRIES : "Could not get a code. Check your internet and try again.");
     } finally {
       setBusy(false);
     }
@@ -168,8 +168,8 @@ export function MyCodeSheet({
     try {
       await deleteMyProgress();
       onDeleted();
-    } catch {
-      setError("Could not delete. Check your internet and try again.");
+    } catch (e) {
+      setError(e instanceof TooManyTriesError ? TOO_MANY_TRIES : "Could not delete. Check your internet and try again.");
       setBusy(false);
     }
   }

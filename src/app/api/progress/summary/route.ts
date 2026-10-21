@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isRateLimited, tooManyTries } from "@/lib/rateLimit";
 import { isFreeFlowTopic, TOPIC_GROUPS, topicMenuName } from "@/lib/topics";
 
 export type ProgressRow = {
@@ -15,6 +16,7 @@ export type ProgressRow = {
  * there — and gets back how many fall in each row.
  */
 export async function POST(request: NextRequest) {
+  if (await isRateLimited(request, "progressSummary")) return tooManyTries();
   const body = await request.json().catch(() => null);
   const masteredIds: string[] = Array.isArray(body?.masteredIds)
     ? body.masteredIds.filter((id: unknown): id is string => typeof id === "string").slice(0, 20000)

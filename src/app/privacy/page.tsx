@@ -4,7 +4,7 @@ import { InfoPage } from "@/components/student/InfoPage";
 export const metadata: Metadata = { title: "Privacy · Preposition Master" };
 
 /** What the app keeps and where — keep in step with the code: progressSync (secret code),
- *  /api/reports (no name), DailyStat + Vercel Analytics, vercel.json region fra1. */
+ *  /api/reports (no name), DailyStat + Vercel Analytics, rateLimit.ts, vercel.json region fra1. */
 const POINTS: { title: string; text: React.ReactNode }[] = [
   {
     title: "On your phone",
@@ -21,6 +21,10 @@ const POINTS: { title: string; text: React.ReactNode }[] = [
   {
     title: "Counting visits",
     text: "We count how many tests are finished each day (just a number) and use Vercel Web Analytics, which counts page visits without cookies.",
+  },
+  {
+    title: "Stopping spam",
+    text: "To stop floods of fake requests, the server counts how often each phone sends something. It keeps a scrambled number instead of your internet address, and only for a day at most.",
   },
   {
     title: "Where it's stored",
@@ -40,7 +44,7 @@ export default function PrivacyPage() {
   return (
     <InfoPage>
       <h1 className="mt-4 text-[26px] font-bold">Privacy</h1>
-      <p className="mt-1.5 text-[13px] text-[#5C6378]">Updated 19 October 2026</p>
+      <p className="mt-1.5 text-[13px] text-[#5C6378]">Updated 21 October 2026</p>
 
       <div className="mt-5 rounded-2xl px-4 py-3.5 text-[15px] leading-normal" style={{ background: "#E8F5EC", color: "#14532D" }}>
         <b>In short:</b> we don&apos;t know who you are. No accounts, no emails, no phone numbers, no real names. No

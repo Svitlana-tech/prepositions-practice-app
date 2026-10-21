@@ -148,3 +148,15 @@ model ProgressSave {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+/// Spam guard for the public POSTs (src/lib/rateLimit.ts): how many requests one device made
+/// in the current minute / hour / day. The device is a salted hash of its internet address,
+/// never the address itself, and rows are deleted once their window is over.
+model RateLimit {
+  /// "reports:m:29364012:<hash>" — rule, window, window number, device
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

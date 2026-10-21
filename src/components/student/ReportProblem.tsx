@@ -46,6 +46,10 @@ export function ReportProblem({ taskId, chosen }: { taskId: string; chosen?: str
           comment: text.trim(),
         }),
       });
+      if (res.status === 429) {
+        setError("Too many reports. Wait a minute and try again.");
+        return;
+      }
       if (!res.ok) throw new Error();
       setOpen(false);
       setText("");

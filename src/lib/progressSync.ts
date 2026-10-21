@@ -48,6 +48,10 @@ async function post(path: string, body: unknown, keepalive = false): Promise<Res
   });
 }
 
+/** The server's spam guard said "wait a minute" (HTTP 429) — shown as such, not as "no internet". */
+export class TooManyTriesError extends Error {}
+export const TOO_MANY_TRIES = "Too many tries. Wait a minute and try again.";
+
 let saveTimer: number | null = null;
 
 /** Called by writeStudentValue: a synced value changed, so the server copy is refreshed soon
@@ -115,6 +119,7 @@ export async function syncOnOpen(): Promise<boolean> {
 /** "Get my code": a new code with this phone's progress saved under it. Throws when offline. */
 export async function createSecretCode(): Promise<string> {
   const res = await post("/api/progress/create", { data: collect() });
+  if (res.status === 429) throw new TooManyTriesError();
   const body = await res.json().catch(() => null);
   if (!res.ok || typeof body?.code !== "string") throw new Error("No code");
   storeStudentValue(CODE, body.code);
@@ -125,6 +130,7 @@ export async function createSecretCode(): Promise<string> {
  *  Throws when offline. */
 export async function findSave(code: string): Promise<SavedProgress | null> {
   const res = await post("/api/progress/load", { code });
+  if (res.status === 429) throw new TooManyTriesError();
   if (res.status === 404) return null;
   const body = await res.json().catch(() => null);
   if (!res.ok || !isSaved(body?.data)) throw new Error("Load failed");
@@ -142,6 +148,7 @@ export async function deleteMyProgress(): Promise<void> {
   const code = getSecretCode();
   if (code) {
     const res = await post("/api/progress/delete", { code });
+    if (res.status === 429) throw new TooManyTriesError();
     if (!res.ok) throw new Error("Delete failed");
   }
   if (saveTimer !== null) window.clearTimeout(saveTimer);

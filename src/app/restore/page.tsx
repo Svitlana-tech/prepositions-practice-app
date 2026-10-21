@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NICKNAME_MAX, setStoredStudentName } from "@/lib/studentName";
 import { setOnboardingSeen } from "@/lib/onboarding";
-import { adoptSave, findSave, type SavedProgress } from "@/lib/progressSync";
+import { adoptSave, findSave, TooManyTriesError, TOO_MANY_TRIES, type SavedProgress } from "@/lib/progressSync";
 
 const INPUT =
   "w-full rounded-[14px] border-[1.5px] bg-white px-4 py-3.5 text-base outline-none focus:border-[#1565C0]";
@@ -28,8 +28,8 @@ export default function RestorePage() {
       const saved = await findSave(code);
       if (saved) setFound(saved);
       else setError("We couldn't find this code. Check the words and the number.");
-    } catch {
-      setError("No connection. Check your internet and try again.");
+    } catch (e) {
+      setError(e instanceof TooManyTriesError ? TOO_MANY_TRIES : "No connection. Check your internet and try again.");
     } finally {
       setBusy(false);
     }

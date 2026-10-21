@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isRateLimited, tooManyTries } from "@/lib/rateLimit";
 
 const MAX_COMMENT = 1000;
 
 /** Public: a student's "Report a problem" note about one question. The sentence and its
  *  answer are copied from the task here, server-side, not taken from the request. */
 export async function POST(request: NextRequest) {
+  if (await isRateLimited(request, "reports")) return tooManyTries();
   const body = await request.json().catch(() => null);
   const taskId = typeof body?.taskId === "string" ? body.taskId : null;
   const comment = typeof body?.comment === "string" ? body.comment.trim().slice(0, MAX_COMMENT) : "";
